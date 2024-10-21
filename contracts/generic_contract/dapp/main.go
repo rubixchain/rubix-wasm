@@ -10,7 +10,7 @@ import (
 	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/wasmbridge"
 )
 
-const ADDITION_CONTRACT_WASM = "../../../artifacts/generic_contract.wasm"
+const GENERIC_CONTRACT_WASM = "../../../artifacts/generic_contract.wasm"
 
 
 func executeAndGetContractResult(wasmModule *wasmbridge.WasmModule, contractInput string) (string, error) {
@@ -77,7 +77,7 @@ func main() {
     hostFnRegistry := wasmbridge.NewHostFunctionRegistry()
     
     // Initialize the WASM module
-    wasmModule, err := wasmbridge.NewWasmModule(ADDITION_CONTRACT_WASM, hostFnRegistry)
+    wasmModule, err := wasmbridge.NewWasmModule(GENERIC_CONTRACT_WASM, hostFnRegistry)
     if err != nil {
         log.Fatalf("Failed to initialize WASM module: %v", err)
     }
