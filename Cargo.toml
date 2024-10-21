@@ -1,0 +1,7 @@
+[workspace]
+members = ["packages/*"]
+exclude = ["contracts"]
+
+resolver = "2"
+
+[workspace.dependencies]
