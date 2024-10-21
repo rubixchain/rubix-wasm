@@ -16,9 +16,9 @@ The [generic contract](https://github.com/rubixchain/rubix-wasm/tree/main/contra
 
 ### 1. Write WASM Contract in Rust
 
-Initially, we will provide support for Rust when it comes to writing contracts, as support for additional languages will be added in the future. Writing contract functions is as simple as writing any function in Rust. However, these functions won't be available for use outside of the WASM environment. To export these functions, you need to import and use the contract_fn macro, which is available through rubixwasm-std.
+Initially, we will provide support for Rust when it comes to writing contracts, as support for additional languages will be added in the future. Writing contract functions is as simple as writing any function in Rust. However, these functions won't be available for use outside of the WASM environment. To export these functions, you need to import and use the `contract_fn` macro, which is available through [rubixwasm-std](https://github.com/rubixchain/rubix-wasm/tree/main/packages/std).
 
-Exported contract functions must adhere to a specific signature. They can only accept a single struct argument that implements Serde's Serialize and Deserialize traits and must return a `Result<String, WasmError>`. The expected return value must be serialized to a String. The WasmError is a string-like type responsible for handling errors and can be imported from rubixwasm-std.
+Exported contract functions must adhere to a specific signature. They can only accept a single struct argument that implements [Serde](https://serde.rs/)'s `Serialize` and `Deserialize` traits and must return a `Result<String, WasmError>`. The expected return value must be serialized to a String. The `WasmError` is a string-like type responsible for handling errors and can be imported from [rubixwasm-std](https://github.com/rubixchain/rubix-wasm/tree/main/packages/std).
 
 Following is an illustration of an exported contract function:
 
