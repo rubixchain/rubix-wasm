@@ -1,6 +1,6 @@
 # Rubix Wasm 
 
-A set of libraries enabling developers to build Contracts on Rubix with ease!
+A set of libraries enabling developers to build WASM Contracts on Rubix with ease!
 
 ## Project structure
 
