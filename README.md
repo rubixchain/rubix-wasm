@@ -10,6 +10,11 @@ A set of libraries enabling developers to build WASM Contracts on Rubix with eas
 
 - `go-wasm-bridge` - Golang bindings which helps interacting with the WASM binary
 
+## Contracts
+
+- [Generic Contract]() - A simple contract with sample functions to demostrate `rubix-wasm` features
+- [Bidding Contract](https://github.com/rubixchain/rubix-wasm/tree/main/contracts/bidding_contract) - A simple contract which takes a Bid amount and stores it when the provided Bid amount is larger than the current Bid amount. 
+
 ## Usage
 
 The [generic contract](https://github.com/rubixchain/rubix-wasm/tree/main/contracts/generic_contract) is a good starting point to explore the usage of libraries and the paradigm to write contracts.
@@ -63,4 +68,7 @@ The [go-wasm-bridge](https://github.com/rubixchain/rubix-wasm/tree/main/go-wasm-
 
 
 The Go package provides us a `CallFunction()` which lets us call the exported Contract function. Refer [this](https://github.com/rubixchain/rubix-wasm/blob/1d6dc0b989a7d5278da6e71c8b29739fa6e6cdb3/contracts/generic_contract/dapp/main.go#L51) function which is responsible for calling the `greetings` contract function. [Here](https://github.com/rubixchain/rubix-wasm/blob/1d6dc0b989a7d5278da6e71c8b29739fa6e6cdb3/contracts/generic_contract/dapp/main.go#L52) we are letting the WASM runtime know about the function we are interested to execute. This input stringifyed JSON syntax for calling Contract functions is similar to EVM and CosmWasm contracts.
- 
+
+
+
+
