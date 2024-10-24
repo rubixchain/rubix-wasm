@@ -16,4 +16,10 @@ type HostFunction interface {
 
 	// Initialize inits with necessary Wasmtime elements such as allocation, deallocation functions and memory
 	Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory)
+
+	// GetAllocFunc gets the allocate function
+	GetAllocFunc() *wasmtime.Func
+
+	// GetMemory gets the allocate function
+	GetMemory() *wasmtime.Memory
 }

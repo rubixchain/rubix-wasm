@@ -22,6 +22,14 @@ func (h *DoApiCall) Name() string {
 	return "do_api_call"
 }
 
+func (h *DoApiCall) GetAllocFunc() *wasmtime.Func {
+	return h.allocFunc
+}
+
+func (h *DoApiCall) GetMemory() *wasmtime.Memory {
+	return h.memory
+}
+
 func (h *DoApiCall) FuncType() *wasmtime.FuncType {
 	return wasmtime.NewFuncType(
 		[]*wasmtime.ValType{
