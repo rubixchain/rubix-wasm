@@ -7,7 +7,7 @@ A simple contract which takes a Bid amount and stores it when the provided Bid a
 1. **`place_bid`**
 
 Input Parameters: 
-    - `bid_amount`: Amount user is billing to bid
+    - `bid_amount`: Amount user is willing to bid
 
 Validations:
     - The input `bid_amount` its value must be more than 3.0
