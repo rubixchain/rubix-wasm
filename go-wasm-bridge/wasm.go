@@ -190,6 +190,8 @@ func (w *WasmModule) CallFunction(args string) (string, error) {
 	// Read output data
 	outputData := make([]byte, outputLen)
 	copy(outputData, memoryData[outputPtr:outputPtr+outputLen])
+	
+	fmt.Println(memoryData[outputPtr:outputPtr+10])
 
 	// Deserialize output data
 	var output interface{}
