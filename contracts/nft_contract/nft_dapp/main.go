@@ -18,15 +18,17 @@ func executeAndGetContractResult(wasmModule *wasmbridge.WasmModule, contractInpu
 
 	return contractResult, nil
 }
+
 func mintNFTFunc(wasmModule *wasmbridge.WasmModule) {
-	//contractInput := `{"create_sample_nft":{"did":"bafybmidcbhlerxfkrgfcjzi6fd442efcjx6lnbi5lx2p3l3o6a5qzjclfi","metadata":"/home/rubix/Sai-Rubix/Nft-Rubix/nft/metadata.json","artifact":"/home/rubix/Sai-Rubix/Nft-Rubix/nft/testimage21.png","port":"20024","Quorumtype":2}}`
-	contractInput := `{"add_three_nums": {"a": 1, "b": 2, "c": 20}}`
+	//contractInput := `{"create_sample_nft":{"did":"bafybmidcbhlerxfkrgfcjzi6fd442efcjx6lnbi5lx2p3l3o6a5qzjclfi","metadata":"/home/rubix/Sai-Rubix/Nft-Rubix/nft/metadata.json","artifact":"/home/rubix/Sai-Rubix/Nft-Rubix/nft/testimage24.png","port":"20024","quorumtype":2}}`
+	contractInput := `{"mint_sample_nft":{"name": "rubix1", "nft_info": {"did":"bafybmidcbhlerxfkrgfcjzi6fd442efcjx6lnbi5lx2p3l3o6a5qzjclfi","metadata":"/home/rubix/Sai-Rubix/Nft-Rubix/nft/metadata.json","artifact":"/home/rubix/Sai-Rubix/Nft-Rubix/nft/testimage25.png","port":"20024","quorumtype":2}}}`
+
 	result, err := executeAndGetContractResult(wasmModule, contractInput)
 	if err != nil {
-		fmt.Printf("unable to execute `create_sample_nft` Contract function, error: %v\n", err)
+		fmt.Printf("unable to execute `mint_sample_nft` Contract function, error: %v\n", err)
 		return
 	}
-	fmt.Println("create_sample_nft Result: ", result)
+	fmt.Println("mint_sample_nft Result: ", result)
 }
 func main() {
 	// Create Import function registry
