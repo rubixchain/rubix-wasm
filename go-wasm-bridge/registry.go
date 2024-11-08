@@ -14,6 +14,7 @@ func NewHostFunctionRegistry() *HostFunctionRegistry {
 	// Register predefined host functions
 	registry.Register(NewDoApiCall())
 	registry.Register(NewDoMintNFTApiCall())
+	registry.Register(NewDoTransferNFTApiCall())
 
 	return registry
 }

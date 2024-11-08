@@ -6,12 +6,17 @@ extern "C" {
         resp_ptr_ptr: *mut *const u8,
         resp_len_ptr: *mut usize,
     ) -> i32;
-    // do_createnft_api_callmakes a request for an input data
+    // do_mint_nft mints an NFT
     pub fn do_mint_nft(
         inputdata_ptr: *const u8,
         inputdata_len: usize,
         resp_ptr_ptr: *mut *const u8,
         resp_len_ptr: *mut usize,
     ) -> i32;
-
+    pub fn do_transfer_nft(
+        inputdata_ptr: *const u8,
+        inputdata_len: usize,
+        resp_ptr_ptr: *mut *const u8,
+        resp_len_ptr: *mut usize,
+    ) -> i32;
 }

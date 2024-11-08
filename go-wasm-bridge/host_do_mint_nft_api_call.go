@@ -19,7 +19,7 @@ type DoMintNFTApiCall struct {
 	allocFunc *wasmtime.Func
 	memory    *wasmtime.Memory
 }
-type MintNFTdata struct {
+type MintNFTData struct {
 	Did        string `json:"did"`
 	Metadata   string `json:"metadata"`
 	Artifact   string `json:"artifact"`
@@ -61,7 +61,7 @@ func (h *DoMintNFTApiCall) Callback() HostFunctionCallBack {
 	return h.callback
 }
 
-func callCreateNFTAPI(mintNFTdata MintNFTdata) []byte {
+func callCreateNFTAPI(mintNFTdata MintNFTData) []byte {
 	var requestBody bytes.Buffer
 
 	// Create a new multipart writer
@@ -83,7 +83,7 @@ func callCreateNFTAPI(mintNFTdata MintNFTdata) []byte {
 	// Add the NFTFile part to the form
 	nftArtifactFile, err := writer.CreateFormFile("artifact", mintNFTdata.Artifact)
 	if err != nil {
-		fmt.Println("Error creating NFT Artifact file:", err)	
+		fmt.Println("Error creating NFT Artifact file:", err)
 		return nil
 	}
 
@@ -166,7 +166,7 @@ func callCreateNFTAPI(mintNFTdata MintNFTdata) []byte {
 	return createNFTAPIResponse
 
 }
-func callDeployNFTAPI(mintNFTData MintNFTdata, nftId string) error {
+func callDeployNFTAPI(mintNFTData MintNFTData, nftId string) error {
 	var input deployNFTReq
 	input.Did = mintNFTData.Did
 	input.Nft = nftId
@@ -302,11 +302,11 @@ func (h *DoMintNFTApiCall) callback(
 	// Extract input bytes and convert to string
 	inputBytes := data[inputStart:inputEnd]
 
-	var mintNFTData MintNFTdata
+	var mintNFTData MintNFTData
 	//Unmarshaling the data which has been read from the wasm memory
 	err3 := json.Unmarshal(inputBytes, &mintNFTData)
 	if err3 != nil {
-		fmt.Println("Error unmarshaling response in mintToken:", err3)
+		fmt.Println("Error unmarshaling response in callback function:", err3)
 	}
 
 	callCreateNFTAPIResp := callCreateNFTAPI(mintNFTData)
