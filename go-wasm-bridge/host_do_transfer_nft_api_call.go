@@ -15,7 +15,7 @@ type TransferNFTData struct {
 	NFT        string  `json:"nft"`
 	Owner      string  `json:"owner"`
 	Receiver   string  `json:"receiver"`
-	QuorumType int     `json:"quorumtype"`
+	QuorumType int     `json:"quorum_type"`
 	Comment    string  `json:"comment"`
 	NFTValue   float64 `json:"nft_value"`
 	NFTData    string  `json:"nft_data"`
