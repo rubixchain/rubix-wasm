@@ -15,6 +15,8 @@ func NewHostFunctionRegistry() *HostFunctionRegistry {
 	registry.Register(NewDoApiCall())
 	registry.Register(NewDoMintNFTApiCall())
 	registry.Register(NewDoTransferNFTApiCall())
+	registry.Register(NewDoMintFTApiCall())
+	registry.Register(NewDoTransferFTApiCall())
 
 	return registry
 }

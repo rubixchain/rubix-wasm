@@ -1,5 +1,5 @@
 [workspace]
-members = [ "packages/*" ]
+members = [ "ft_contract", "packages/*" ]
 exclude = ["contracts"]
 
 resolver = "2"
