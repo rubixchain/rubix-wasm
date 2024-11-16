@@ -1,5 +1,5 @@
 [workspace]
-members = ["packages/*"]
+members = [ "packages/*" ]
 exclude = ["contracts"]
 
 resolver = "2"
