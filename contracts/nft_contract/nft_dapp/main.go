@@ -33,7 +33,7 @@ func mintNFTFunc(wasmModule *wasmbridge.WasmModule) {
 
 func transferNFTFunc(wasmModule *wasmbridge.WasmModule) {
 	//contractInput := `{"create_sample_nft":{"did":"bafybmidcbhlerxfkrgfcjzi6fd442efcjx6lnbi5lx2p3l3o6a5qzjclfi","metadata":"/home/rubix/Sai-Rubix/Nft-Rubix/nft/metadata.json","artifact":"/home/rubix/Sai-Rubix/Nft-Rubix/nft/testimage24.png","port":"20024","quorumtype":2}}`
-	contractInput := `{"transfer_sample_nft":{"name": "rubix1", "nft_info": {"comment":"testing transfer","nft":"QmXna6id9Zc9JryWmcdx74LGscGDPd4nnH4yc5XvdvMqh5","nft_data":"","nft_value": 10,"owner": "bafybmidcbhlerxfkrgfcjzi6fd442efcjx6lnbi5lx2p3l3o6a5qzjclfi", "receiver": "bafybmihkhzcczetx43gzuraoemydxntloct6qb4jkix6xo26fv5jdefq3a","port":"20024","quorumtype":2}}}`
+	contractInput := `{"transfer_sample_nft":{"name": "rubix1", "nft_info": {"comment":"testing transfer","nft":"QmXna6id9Zc9JryWmcdx74LGscGDPd4nnH4yc5XvdvMqh5","nft_data":"","nft_value": 10,"owner": "bafybmidcbhlerxfkrgfcjzi6fd442efcjx6lnbi5lx2p3l3o6a5qzjclfi", "receiver": "bafybmihkhzcczetx43gzuraoemydxntloct6qb4jkix6xo26fv5jdefq3a","port":"20024","quorum_type":2}}}`
 
 	result, err := executeAndGetContractResult(wasmModule, contractInput)
 	if err != nil {

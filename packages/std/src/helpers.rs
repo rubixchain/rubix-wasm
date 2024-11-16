@@ -23,9 +23,9 @@ pub struct TransferNft{
     pub comment:    String, 
     pub nft:        String,
     pub nft_data:   String,
-    pub nft_value:  i32,
+    pub nft_value:  f64,
     pub owner:      String,
-    pub quorumtype:  i32,
+    pub quorum_type:  i32,
     pub receiver:    String,   
     pub port:  String,
 }
