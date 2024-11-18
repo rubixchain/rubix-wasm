@@ -34,7 +34,7 @@ func (h *DoApiCall) FuncType() *wasmtime.FuncType {
 	)
 }
 
-func (h *DoApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory) {
+func (h *DoApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int) {
 	h.allocFunc = allocFunc
 	h.memory = memory
 }

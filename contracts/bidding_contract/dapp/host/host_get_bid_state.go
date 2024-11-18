@@ -33,7 +33,7 @@ func (h *GetBid) FuncType() *wasmtime.FuncType {
 	)
 }
 
-func (h *GetBid) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory) {
+func (h *GetBid) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int) {
 	h.allocFunc = allocFunc
 	h.memory = memory
 }

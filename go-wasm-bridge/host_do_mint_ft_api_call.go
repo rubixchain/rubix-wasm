@@ -8,20 +8,23 @@ import (
 	"io"
 
 	"net/http"
+	"net/url"
 
 	"github.com/bytecodealliance/wasmtime-go"
 )
 
 type DoMintFTApiCall struct {
-	allocFunc *wasmtime.Func
-	memory    *wasmtime.Memory
+	allocFunc   *wasmtime.Func
+	memory      *wasmtime.Memory
+	nodeAddress string
+	quorumType  int
 }
+
 type MintFTData struct {
 	Did        string `json:"did"`
-	FtCount    int32  `json:"ftcount"`
-	FtName     string `json:"ftname"`
-	TokenCount int32  `json:"tokencount"`
-	Port       string `json:"port"`
+	FtCount    int32  `json:"ft_count"`
+	FtName     string `json:"ft_name"`
+	TokenCount int32  `json:"token_count"`
 }
 
 func NewDoMintFTApiCall() *DoMintFTApiCall {
@@ -44,16 +47,18 @@ func (h *DoMintFTApiCall) FuncType() *wasmtime.FuncType {
 	)
 }
 
-func (h *DoMintFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory) {
+func (h *DoMintFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int) {
 	h.allocFunc = allocFunc
 	h.memory = memory
+	h.nodeAddress = nodeAddress
+	h.quorumType = quorumType
 }
 
 func (h *DoMintFTApiCall) Callback() HostFunctionCallBack {
 	return h.callback
 }
 
-func callCreateFTAPI(mintFTdata MintFTData) (string, error) {
+func callCreateFTAPI(nodeAddress string, mintFTdata MintFTData) (string, error) {
 	fmt.Println("The body in create-ft api :", mintFTdata)
 	requestBody, err := json.Marshal(mintFTdata)
 	if err != nil {
@@ -62,9 +67,12 @@ func callCreateFTAPI(mintFTdata MintFTData) (string, error) {
 	}
 
 	// Create the request URL
-	url := fmt.Sprintf("http://localhost:%s/api/create-ft", mintFTdata.Port)
+	requestURL, err := url.JoinPath(nodeAddress, "/api/create-ft")
+	if err != nil {
+		return "", err
+	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(requestBody))
 	if err != nil {
 		fmt.Println("Error creating HTTP request:", err)
 		return "", err
@@ -100,10 +108,8 @@ func callCreateFTAPI(mintFTdata MintFTData) (string, error) {
 
 	result := response["result"].(map[string]interface{})
 	id := result["id"].(string)
-	signatureResponse := SignatureResponse(id, mintFTdata.Port)
 
-	return signatureResponse, nil
-
+	return SignatureResponse(id, nodeAddress)
 }
 
 func (h *DoMintFTApiCall) callback(
@@ -161,7 +167,7 @@ func (h *DoMintFTApiCall) callback(
 		fmt.Println("Error unmarshaling mintftdata in callback function:", err3)
 	}
 
-	callCreateFTAPIResp, err := callCreateFTAPI(mintFTData)
+	callCreateFTAPIResp, err := callCreateFTAPI(h.nodeAddress, mintFTData)
 	if err != nil {
 		fmt.Println("Error calling CreateFTAPI in callback function:", err)
 		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap("failed to mint ft")
