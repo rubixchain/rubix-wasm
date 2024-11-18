@@ -7,24 +7,25 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/bytecodealliance/wasmtime-go"
 )
 
 type TransferNFTData struct {
-	NFT        string  `json:"nft"`
-	Owner      string  `json:"owner"`
-	Receiver   string  `json:"receiver"`
-	QuorumType int     `json:"quorum_type"`
-	Comment    string  `json:"comment"`
-	NFTValue   float64 `json:"nft_value"`
-	NFTData    string  `json:"nft_data"`
-	Port       string  `json:"port"`
+	NFT      string  `json:"nft"`
+	Owner    string  `json:"owner"`
+	Receiver string  `json:"receiver"`
+	Comment  string  `json:"comment"`
+	NFTValue float64 `json:"nft_value"`
+	NFTData  string  `json:"nft_data"`
 }
 
 type DoTransferNFTApiCall struct {
-	allocFunc *wasmtime.Func
-	memory    *wasmtime.Memory
+	allocFunc   *wasmtime.Func
+	memory      *wasmtime.Memory
+	nodeAddress string
+	quorumType  int
 }
 
 func NewDoTransferNFTApiCall() *DoTransferNFTApiCall {
@@ -45,15 +46,17 @@ func (h *DoTransferNFTApiCall) FuncType() *wasmtime.FuncType {
 	)
 }
 
-func (h *DoTransferNFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory) {
+func (h *DoTransferNFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int) {
 	h.allocFunc = allocFunc
 	h.memory = memory
+	h.nodeAddress = nodeAddress
+	h.quorumType = quorumType
 }
 
 func (h *DoTransferNFTApiCall) Callback() HostFunctionCallBack {
 	return h.callback
 }
-func callTransferNFTAPI(transferNFTdata TransferNFTData) error {
+func callTransferNFTAPI(nodeAddress string, quorumType int, transferNFTdata TransferNFTData) error {
 	fmt.Println("printing the data in callTransferNFTAPI function is:", transferNFTdata)
 	bodyJSON, err := json.Marshal(transferNFTdata)
 	if err != nil {
@@ -61,8 +64,12 @@ func callTransferNFTAPI(transferNFTdata TransferNFTData) error {
 		return err
 	}
 
-	url := fmt.Sprintf("http://localhost:%s/api/execute-nft", transferNFTdata.Port)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyJSON))
+	transferNFTUrl, err := url.JoinPath(nodeAddress, "/api/execute-nft")
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", transferNFTUrl, bytes.NewBuffer(bodyJSON))
 	if err != nil {
 		fmt.Println("Error creating HTTP request:", err)
 		return err
@@ -93,11 +100,11 @@ func callTransferNFTAPI(transferNFTdata TransferNFTData) error {
 
 	result := response["result"].(map[string]interface{})
 	id := result["id"].(string)
-	SignatureResponse(id, transferNFTdata.Port)
 
 	defer resp.Body.Close()
-	return nil
 
+	_, err = SignatureResponse(id, nodeAddress)
+	return err
 }
 
 func (h *DoTransferNFTApiCall) callback(
@@ -155,7 +162,7 @@ func (h *DoTransferNFTApiCall) callback(
 		fmt.Println("Error unmarshaling response in callback function:", err3)
 		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Error unmarshaling response in callback function:", err3))
 	}
-	callTransferNFTAPIRespErr := callTransferNFTAPI(transferNFTData)
+	callTransferNFTAPIRespErr := callTransferNFTAPI(h.nodeAddress, h.quorumType, transferNFTData)
 	if callTransferNFTAPIRespErr != nil {
 		fmt.Println("failed to transfer NFT", callTransferNFTAPIRespErr)
 		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap("failed to transfer NFT")

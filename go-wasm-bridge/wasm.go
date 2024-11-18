@@ -14,29 +14,44 @@ import (
 
 // WasmModule encapsulates the WASM module and its associated functions.
 type WasmModule struct {
+	// Wasmtime Runtime elements
 	engine      *wasmtime.Engine
 	store       *wasmtime.Store
 	instance    *wasmtime.Instance
 	memory      *wasmtime.Memory
 	allocFunc   *wasmtime.Func
 	deallocFunc *wasmtime.Func
+
+	// Rubix Blockchain elements
+	nodeAddress string
+	quorumType  int
 }
 
+// WasmModuleOption allows us to configure WasmModule
+type WasmModuleOption func(*WasmModule)
+
 // NewWasmModule initializes and returns a new WasmModule.
-func NewWasmModule(wasmPath string, registry *HostFunctionRegistry) (*WasmModule, error) {
+
+func NewWasmModule(wasmFilePath string, registry *HostFunctionRegistry, wasmModuleOpts ...WasmModuleOption) (*WasmModule, error) {
+	// Define Wasm Module with default params
+	wasmModule := &WasmModule{
+		nodeAddress: "http://localhost:20000",
+		quorumType: 2,
+	}
+	
 	// Read the WASM file
-	wasmBytes, err := os.ReadFile(wasmPath)
+	wasmBytes, err := os.ReadFile(wasmFilePath)
 	if err != nil {
 		return nil, err
 	}
 
-	engine := wasmtime.NewEngine()
-	store := wasmtime.NewStore(engine)
-	linker := wasmtime.NewLinker(engine)
+	wasmModule.engine = wasmtime.NewEngine()
+	wasmModule.store = wasmtime.NewStore(wasmModule.engine)
+	linker := wasmtime.NewLinker(wasmModule.engine)
 
 	for _, hf := range registry.GetHostFunctions() {
 		err := linker.Define("env", hf.Name(), wasmtime.NewFunc(
-			store,
+			wasmModule.store,
 			hf.FuncType(),
 			hf.Callback(),
 		))
@@ -45,44 +60,72 @@ func NewWasmModule(wasmPath string, registry *HostFunctionRegistry) (*WasmModule
 		}
 	}
 
-	module, err := wasmtime.NewModule(engine, wasmBytes)
+	module, err := wasmtime.NewModule(wasmModule.engine, wasmBytes)
 	if err != nil {
 		return nil, err
 	}
 
-	instance, err := linker.Instantiate(store, module)
+	wasmModule.instance, err = linker.Instantiate(wasmModule.store, module)
 	if err != nil {
 		return nil, err
 	}
 
-	memory := instance.GetExport(store, "memory").Memory()
-	if memory == nil {
+	wasmModule.memory = wasmModule.instance.GetExport(wasmModule.store, "memory").Memory()
+	if wasmModule.memory == nil {
 		return nil, errors.New("failed to find memory export")
 	}
 
-	allocFunc := instance.GetExport(store, "alloc").Func()
-	if allocFunc == nil {
+	wasmModule.allocFunc = wasmModule.instance.GetExport(wasmModule.store, "alloc").Func()
+	if wasmModule.allocFunc == nil {
 		return nil, errors.New("failed to find alloc function")
 	}
 
-	deallocFunc := instance.GetExport(store, "dealloc").Func()
-	if deallocFunc == nil {
+	wasmModule.deallocFunc = wasmModule.instance.GetExport(wasmModule.store, "dealloc").Func()
+	if wasmModule.deallocFunc == nil {
 		return nil, errors.New("failed to find dealloc function")
+	}
+
+	// Set Rubix Blockchain node params
+	wasmModule.nodeAddress = "http://localhost:20000"
+	wasmModule.quorumType = 2
+
+	// Apply Wasm Configurations
+	for _, opt := range wasmModuleOpts {
+		opt(wasmModule)
 	}
 
 	// Initialize all host functions with allocFunc, deallocFunc, and memory
 	for _, hf := range registry.GetHostFunctions() {
-		hf.Initialize(allocFunc, deallocFunc, memory)
+		hf.Initialize(
+			wasmModule.allocFunc, 
+			wasmModule.deallocFunc, 
+			wasmModule.memory,
+			wasmModule.nodeAddress,
+			wasmModule.quorumType,
+		)
 	}
 
-	return &WasmModule{
-		engine:      engine,
-		store:       store,
-		instance:    instance,
-		memory:      memory,
-		allocFunc:   allocFunc,
-		deallocFunc: deallocFunc,
-	}, nil
+	return wasmModule, nil
+}
+
+func WithRubixNodeAddress(nodeAddress string) WasmModuleOption {
+	return func(w *WasmModule) {
+		w.nodeAddress = nodeAddress
+	}
+}
+
+func WithQuorumType(quorumType int) WasmModuleOption {
+	return func(w *WasmModule) {
+		w.quorumType = quorumType
+	}
+}
+
+func (w *WasmModule) GetNodeAddress() string {
+	return w.nodeAddress
+}
+
+func (w *WasmModule) GetQuorumType() int {
+	return w.quorumType
 }
 
 // allocate allocates memory in WASM and copies the data.

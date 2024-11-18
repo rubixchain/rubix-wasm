@@ -10,6 +10,7 @@ import (
 	// "io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/bytecodealliance/wasmtime-go"
@@ -18,14 +19,16 @@ import (
 type DoMintNFTApiCall struct {
 	allocFunc *wasmtime.Func
 	memory    *wasmtime.Memory
+	nodeAddress string
+	quorumType int
 }
+
 type MintNFTData struct {
 	Did        string `json:"did"`
 	Metadata   string `json:"metadata"`
 	Artifact   string `json:"artifact"`
-	Port       string `json:"port"`
-	QuorumType int32  `json:"quorumtype"`
 }
+
 type deployNFTReq struct {
 	Nft        string `json:"nft"`
 	Did        string `json:"did"`
@@ -52,16 +55,18 @@ func (h *DoMintNFTApiCall) FuncType() *wasmtime.FuncType {
 	)
 }
 
-func (h *DoMintNFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory) {
+func (h *DoMintNFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int) {
 	h.allocFunc = allocFunc
 	h.memory = memory
+	h.nodeAddress = nodeAddress
+	h.quorumType = quorumType
 }
 
 func (h *DoMintNFTApiCall) Callback() HostFunctionCallBack {
 	return h.callback
 }
 
-func callCreateNFTAPI(mintNFTdata MintNFTData) []byte {
+func callCreateNFTAPI(nodeAddress string, mintNFTdata MintNFTData) []byte {
 	var requestBody bytes.Buffer
 
 	// Create a new multipart writer
@@ -126,7 +131,11 @@ func callCreateNFTAPI(mintNFTdata MintNFTData) []byte {
 	}
 
 	// Create the request URL
-	url := fmt.Sprintf("http://localhost:%s/api/create-nft", mintNFTdata.Port)
+	url, err := url.JoinPath(nodeAddress, "/api/create-nft")
+	if err != nil {
+		fmt.Println("Error forming url path for Create NFT API, err: ", err)
+		return nil
+	}
 
 	// Create a new HTTP request
 	req, err := http.NewRequest("POST", url, &requestBody)
@@ -166,21 +175,26 @@ func callCreateNFTAPI(mintNFTdata MintNFTData) []byte {
 	return createNFTAPIResponse
 
 }
-func callDeployNFTAPI(mintNFTData MintNFTData, nftId string) error {
-	var input deployNFTReq
-	input.Did = mintNFTData.Did
-	input.Nft = nftId
-	input.QuorumType = mintNFTData.QuorumType
 
-	bodyJSON, err := json.Marshal(input)
+func callDeployNFTAPI(nodeAddress string, quorumType int, mintNFTData MintNFTData, nftId string) error {
+	var deployReq deployNFTReq
+	
+	deployReq.Did = mintNFTData.Did
+	deployReq.Nft = nftId
+	deployReq.QuorumType = int32(quorumType)
+
+	bodyJSON, err := json.Marshal(deployReq)
 	if err != nil {
 		fmt.Println("error in marshaling JSON:", err)
 		return err
 	}
 
-	// TODO: should be defined while creating new WasmModule
-	url := fmt.Sprintf("http://localhost:%s/api/deploy-nft", mintNFTData.Port)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyJSON))
+	deployNFTUrl, err := url.JoinPath(nodeAddress, "/api/deploy-nft")
+	if err != nil {
+		return err
+	}
+	
+	req, err := http.NewRequest("POST", deployNFTUrl, bytes.NewBuffer(bodyJSON))
 	if err != nil {
 		fmt.Println("Error creating HTTP request:", err)
 		return err
@@ -210,48 +224,11 @@ func callDeployNFTAPI(mintNFTData MintNFTData, nftId string) error {
 
 	result := response["result"].(map[string]interface{})
 	id := result["id"].(string)
-	SignatureResponse(id, mintNFTData.Port)
 
 	defer resp.Body.Close()
-	return nil
-
-}
-func SignatureResponse(requestId string, port string) string {
-	data := map[string]interface{}{
-		"id":       requestId,
-		"mode":     0,
-		"password": "mypassword",
-	}
-
-	bodyJSON, err := json.Marshal(data)
-	if err != nil {
-		fmt.Println("Error marshaling JSON:", err)
-		//	return
-	}
-	url := fmt.Sprintf("http://localhost:%s/api/signature-response", port)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyJSON))
-	if err != nil {
-		fmt.Println("Error creating HTTP request:", err)
-		//return
-	}
-	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error sending HTTP request:", err)
-		//return
-	}
-	fmt.Println("Response Status:", resp.Status)
-	data2, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Printf("Error reading response body: %s\n", err)
-		//return
-	}
-	// Process the data as needed
-	fmt.Println("Response Body in signature response :", string(data2))
-	//json encode string
-	defer resp.Body.Close()
-	return string(data2)
+	
+	_, err = SignatureResponse(id, nodeAddress)
+	return err
 }
 
 func (h *DoMintNFTApiCall) callback(
@@ -309,7 +286,7 @@ func (h *DoMintNFTApiCall) callback(
 		fmt.Println("Error unmarshaling response in callback function:", err3)
 	}
 
-	callCreateNFTAPIResp := callCreateNFTAPI(mintNFTData)
+	callCreateNFTAPIResp := callCreateNFTAPI(h.nodeAddress, mintNFTData)
 	var unmarshaledResponse map[string]interface{}
 	err := json.Unmarshal(callCreateNFTAPIResp, &unmarshaledResponse)
 	if err != nil {
@@ -319,7 +296,7 @@ func (h *DoMintNFTApiCall) callback(
 	nftID := unmarshaledResponse["result"].(string)
 	fmt.Println("Create NFT API result:", nftID)
 
-	errDeploy := callDeployNFTAPI(mintNFTData, nftID)
+	errDeploy := callDeployNFTAPI(h.nodeAddress, h.quorumType, mintNFTData, nftID)
 	if errDeploy != nil {
 		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Deploy NFT API failed: %v\n", errDeploy))
 	}

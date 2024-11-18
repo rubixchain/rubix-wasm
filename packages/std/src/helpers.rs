@@ -14,8 +14,6 @@ pub struct CreateNft {
     pub did:        String, 
     pub metadata:    String,
     pub artifact:    String,
-    pub port:        String,
-    pub quorumtype:  i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -25,9 +23,7 @@ pub struct TransferNft{
     pub nft_data:   String,
     pub nft_value:  f64,
     pub owner:      String,
-    pub quorum_type:  i32,
-    pub receiver:    String,   
-    pub port:  String,
+    pub receiver:    String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -38,8 +34,7 @@ pub struct TransferFt{
     pub creatorDID:      String,
     pub r#type:  i32,
     pub sender: String,
-    pub receiver:    String,   
-    pub port:  String,
+    pub receiver:    String,
 }
 
 #[derive(Serialize, Deserialize)]

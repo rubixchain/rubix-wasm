@@ -25,7 +25,6 @@ func mintFTFunc(wasmModule *wasmbridge.WasmModule) {
   "ftcount": 100,
   "ftname": "apple",
   "tokencount": 1,
-  "port":"20006"
 }}}`
 
 	result, err := executeAndGetContractResult(wasmModule, contractInput)
@@ -37,7 +36,7 @@ func mintFTFunc(wasmModule *wasmbridge.WasmModule) {
 }
 
 func transferFTFunc(wasmModule *wasmbridge.WasmModule) {
-	contractInput := `{"transfer_sample_ft":{"name": "rubix1", "ft_info": {"comment":"testing ft transfer","FTCount":1,"FTName":"apple","sender": "bafybmihxaehnreq4ygnq3re3soob5znuj7hxoku6aeitdukif75umdv2nu","creatorDID": "bafybmihxaehnreq4ygnq3re3soob5znuj7hxoku6aeitdukif75umdv2nu", "receiver": "bafybmienjpoihwu2y6grilbvbrrqhleoifb3irz3gu2savjmjivzqw7424","port":"20006","type":2}}}`
+	contractInput := `{"transfer_sample_ft":{"name": "rubix1", "ft_info": {"comment":"testing ft transfer","FTCount":1,"FTName":"apple","sender": "bafybmihxaehnreq4ygnq3re3soob5znuj7hxoku6aeitdukif75umdv2nu","creatorDID": "bafybmihxaehnreq4ygnq3re3soob5znuj7hxoku6aeitdukif75umdv2nu", "receiver": "bafybmienjpoihwu2y6grilbvbrrqhleoifb3irz3gu2savjmjivzqw7424"}}}`
 
 	result, err := executeAndGetContractResult(wasmModule, contractInput)
 	if err != nil {
@@ -48,15 +47,23 @@ func transferFTFunc(wasmModule *wasmbridge.WasmModule) {
 }
 
 func main() {
+	// Rubix Node Configs
+	nodeAddress := "http://localhost:20005"
+	quorumType := 2
+
 	// Create Import function registry
 	hostFnRegistry := wasmbridge.NewHostFunctionRegistry()
-	fmt.Println(hostFnRegistry)
+	
 	// Initialize the WASM module
-	wasmModule, err := wasmbridge.NewWasmModule(FT_CONTRACT_WASM, hostFnRegistry)
+	wasmModule, err := wasmbridge.NewWasmModule(
+		FT_CONTRACT_WASM, 
+		hostFnRegistry,
+		wasmbridge.WithRubixNodeAddress(nodeAddress),
+		wasmbridge.WithQuorumType(quorumType),
+	)
 	if err != nil {
 		log.Fatalf("Failed to initialize WASM module: %v", err)
 	}
-
 	//mintFTFunc(wasmModule)
 	transferFTFunc(wasmModule)
 }
