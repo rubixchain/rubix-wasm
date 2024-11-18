@@ -13,12 +13,13 @@ import (
 )
 
 type TransferNFTData struct {
-	NFT      string  `json:"nft"`
-	Owner    string  `json:"owner"`
-	Receiver string  `json:"receiver"`
-	Comment  string  `json:"comment"`
-	NFTValue float64 `json:"nft_value"`
-	NFTData  string  `json:"nft_data"`
+	NFT        string  `json:"nft"`
+	Owner      string  `json:"owner"`
+	Receiver   string  `json:"receiver"`
+	Comment    string  `json:"comment"`
+	NFTValue   float64 `json:"nft_value"`
+	NFTData    string  `json:"nft_data"`
+	QuorumType int32   `json:"quorum_type"`
 }
 
 type DoTransferNFTApiCall struct {
@@ -57,6 +58,7 @@ func (h *DoTransferNFTApiCall) Callback() HostFunctionCallBack {
 	return h.callback
 }
 func callTransferNFTAPI(nodeAddress string, quorumType int, transferNFTdata TransferNFTData) error {
+	transferNFTdata.QuorumType = int32(quorumType)
 	fmt.Println("printing the data in callTransferNFTAPI function is:", transferNFTdata)
 	bodyJSON, err := json.Marshal(transferNFTdata)
 	if err != nil {

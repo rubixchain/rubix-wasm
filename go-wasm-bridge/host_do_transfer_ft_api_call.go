@@ -13,20 +13,20 @@ import (
 )
 
 type TransferFTData struct {
-	FTCount    int32  `json:"FTCount"`
-	FTName     string `json:"FTName"`
+	FTCount    int32  `json:"ft_count"`
+	FTName     string `json:"ft_name"`
 	CreatorDID string `json:"creatorDID"`
-	QuorumType int32  `json:"type"`
+	QuorumType int32  `json:"quorum_type"`
 	Comment    string `json:"comment"`
 	Receiver   string `json:"receiver"`
 	Sender     string `json:"sender"`
 }
 
 type DoTransferFTApiCall struct {
-	allocFunc *wasmtime.Func
-	memory    *wasmtime.Memory
+	allocFunc   *wasmtime.Func
+	memory      *wasmtime.Memory
 	nodeAddress string
-	quorumType int
+	quorumType  int
 }
 
 func NewDoTransferFTApiCall() *DoTransferFTApiCall {
@@ -58,13 +58,14 @@ func (h *DoTransferFTApiCall) Callback() HostFunctionCallBack {
 	return h.callback
 }
 func callTransferFTAPI(nodeAddress string, quorumType int, transferFTdata TransferFTData) error {
+	transferFTdata.QuorumType = int32(quorumType)
 	bodyJSON, err := json.Marshal(transferFTdata)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
 		return err
 	}
 
-	transferFTUrl, err := url.JoinPath(nodeAddress, "/api/initiate-ft-tranfer")
+	transferFTUrl, err := url.JoinPath(nodeAddress, "/api/initiate-ft-transfer")
 	if err != nil {
 		return err
 	}
@@ -163,7 +164,7 @@ func (h *DoTransferFTApiCall) callback(
 		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Error unmarshaling response in callback function:", err3))
 	}
 	callTransferFTAPIRespErr := callTransferFTAPI(h.nodeAddress, h.quorumType, transferFTData)
-	
+
 	if callTransferFTAPIRespErr != nil {
 		fmt.Println("failed to transfer NFT", callTransferFTAPIRespErr)
 		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap("failed to transfer NFT")

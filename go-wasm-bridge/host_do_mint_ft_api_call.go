@@ -14,17 +14,17 @@ import (
 )
 
 type DoMintFTApiCall struct {
-	allocFunc *wasmtime.Func
-	memory    *wasmtime.Memory
+	allocFunc   *wasmtime.Func
+	memory      *wasmtime.Memory
 	nodeAddress string
-	quorumType int
+	quorumType  int
 }
 
 type MintFTData struct {
 	Did        string `json:"did"`
-	FtCount    int32  `json:"ftcount"`
-	FtName     string `json:"ftname"`
-	TokenCount int32  `json:"tokencount"`
+	FtCount    int32  `json:"ft_count"`
+	FtName     string `json:"ft_name"`
+	TokenCount int32  `json:"token_count"`
 }
 
 func NewDoMintFTApiCall() *DoMintFTApiCall {
@@ -67,7 +67,7 @@ func callCreateFTAPI(nodeAddress string, mintFTdata MintFTData) (string, error) 
 	}
 
 	// Create the request URL
-	requestURL, err :=  url.JoinPath(nodeAddress, "/api/create-ft")
+	requestURL, err := url.JoinPath(nodeAddress, "/api/create-ft")
 	if err != nil {
 		return "", err
 	}

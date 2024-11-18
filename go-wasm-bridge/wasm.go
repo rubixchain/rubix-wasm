@@ -36,9 +36,9 @@ func NewWasmModule(wasmFilePath string, registry *HostFunctionRegistry, wasmModu
 	// Define Wasm Module with default params
 	wasmModule := &WasmModule{
 		nodeAddress: "http://localhost:20000",
-		quorumType: 2,
+		quorumType:  2,
 	}
-	
+
 	// Read the WASM file
 	wasmBytes, err := os.ReadFile(wasmFilePath)
 	if err != nil {
@@ -85,10 +85,6 @@ func NewWasmModule(wasmFilePath string, registry *HostFunctionRegistry, wasmModu
 		return nil, errors.New("failed to find dealloc function")
 	}
 
-	// Set Rubix Blockchain node params
-	wasmModule.nodeAddress = "http://localhost:20000"
-	wasmModule.quorumType = 2
-
 	// Apply Wasm Configurations
 	for _, opt := range wasmModuleOpts {
 		opt(wasmModule)
@@ -97,8 +93,8 @@ func NewWasmModule(wasmFilePath string, registry *HostFunctionRegistry, wasmModu
 	// Initialize all host functions with allocFunc, deallocFunc, and memory
 	for _, hf := range registry.GetHostFunctions() {
 		hf.Initialize(
-			wasmModule.allocFunc, 
-			wasmModule.deallocFunc, 
+			wasmModule.allocFunc,
+			wasmModule.deallocFunc,
 			wasmModule.memory,
 			wasmModule.nodeAddress,
 			wasmModule.quorumType,
@@ -156,7 +152,6 @@ func (w *WasmModule) CallFunction(args string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to parse input JSON: %v", err)
 	}
-
 	if len(inputMap) != 1 {
 		return "", errors.New("input JSON must contain exactly one function")
 	}

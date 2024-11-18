@@ -29,10 +29,9 @@ pub struct TransferNft{
 #[derive(Serialize, Deserialize)]
 pub struct TransferFt{
     pub comment:    String, 
-    pub FTCount:        i32,
-    pub FTName:   String,
+    pub ft_count:        i32,
+    pub ft_name:   String,
     pub creatorDID:      String,
-    pub r#type:  i32,
     pub sender: String,
     pub receiver:    String,
 }
@@ -40,10 +39,9 @@ pub struct TransferFt{
 #[derive(Serialize, Deserialize)]
 pub struct MintFt {
     pub did:        String, 
-    pub ftcount:    i32,
-    pub ftname:    String,
-    pub port:        String,
-    pub tokencount: i32,
+    pub ft_count:    i32,
+    pub ft_name:    String,
+    pub token_count: i32,
 }
 
 
