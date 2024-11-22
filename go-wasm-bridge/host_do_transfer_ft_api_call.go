@@ -57,23 +57,23 @@ func (h *DoTransferFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, 
 func (h *DoTransferFTApiCall) Callback() HostFunctionCallBack {
 	return h.callback
 }
-func callTransferFTAPI(nodeAddress string, quorumType int, transferFTdata TransferFTData) error {
+func callTransferFTAPI(nodeAddress string, quorumType int, transferFTdata TransferFTData) (string, error) {
 	transferFTdata.QuorumType = int32(quorumType)
 	bodyJSON, err := json.Marshal(transferFTdata)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
-		return err
+		return "", err
 	}
 
 	transferFTUrl, err := url.JoinPath(nodeAddress, "/api/initiate-ft-transfer")
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	req, err := http.NewRequest("POST", transferFTUrl, bytes.NewBuffer(bodyJSON))
 	if err != nil {
 		fmt.Println("Error creating HTTP request:", err)
-		return err
+		return "", err
 	}
 
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
@@ -82,7 +82,7 @@ func callTransferFTAPI(nodeAddress string, quorumType int, transferFTdata Transf
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error sending HTTP request:", err)
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
 
@@ -90,7 +90,7 @@ func callTransferFTAPI(nodeAddress string, quorumType int, transferFTdata Transf
 	data2, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Printf("Error reading response body: %s\n", err)
-		return err
+		return "", err
 	}
 	// Process the data as needed
 	fmt.Println("Response Body in callTransferFTAPI :", string(data2))
@@ -98,14 +98,14 @@ func callTransferFTAPI(nodeAddress string, quorumType int, transferFTdata Transf
 	err3 := json.Unmarshal(data2, &response)
 	if err3 != nil {
 		fmt.Println("Error unmarshaling response:", err3)
-		return err3
+		return "", err3
 	}
 
 	result := response["result"].(map[string]interface{})
 	id := result["id"].(string)
 
-	_, err = SignatureResponse(id, nodeAddress)
-	return err
+	signatureResponse, err := SignatureResponse(id, nodeAddress)
+	return signatureResponse, err
 }
 
 func (h *DoTransferFTApiCall) callback(
@@ -163,14 +163,14 @@ func (h *DoTransferFTApiCall) callback(
 		fmt.Println("Error unmarshaling response in callback function:", err3)
 		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Error unmarshaling response in callback function:", err3))
 	}
-	callTransferFTAPIRespErr := callTransferFTAPI(h.nodeAddress, h.quorumType, transferFTData)
+	callTransferFtApiResponse, callTransferFTAPIRespErr := callTransferFTAPI(h.nodeAddress, h.quorumType, transferFTData)
 
 	if callTransferFTAPIRespErr != nil {
 		fmt.Println("failed to transfer NFT", callTransferFTAPIRespErr)
 		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap("failed to transfer NFT")
 	}
 
-	responseStr := "success"
+	responseStr := callTransferFtApiResponse
 	respLen := int32(len(responseStr))
 	result, err := h.allocFunc.Call(caller, respLen)
 	if err != nil {
