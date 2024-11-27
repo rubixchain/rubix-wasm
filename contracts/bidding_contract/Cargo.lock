@@ -6,10 +6,17 @@ version = 3
 name = "bidding_contract"
 version = "0.0.1"
 dependencies = [
+ "hex",
  "rubixwasm-std",
  "serde",
  "serde_json",
 ]
+
+[[package]]
+name = "hex"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "itoa"

@@ -1,19 +1,14 @@
 package host
 
 import (
-	// "bidding-contract/state"
 	"encoding/binary"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
-	"log"
 	"math/big"
-	"os"
 
 	"github.com/bytecodealliance/wasmtime-go"
 	ecies "github.com/ecies/go/v2"
 	wasmbridge "github.com/rubixchain/rubix-wasm/go-wasm-bridge"
-	seal "github.com/rubixchain/rubixgoplatform/crypto"
 
 	secp256k1 "github.com/decred/dcrd/dcrec/secp256k1/v4"
 )
@@ -102,22 +97,39 @@ func (h *DecryptBid) callback(
 	// Extract input bytes and convert to string
 	inputBytes := data[inputStart:inputEnd]
 
-	var contractInputMap map[string][]byte
+	type DecryptionInputData struct {
+		Privatekey_path string `json:"Privatekey_path"`
+        Data []byte `json:"data"`
+	}
+
+	var contractInputMap DecryptionInputData
 	//Unmarshaling the data which has been read from the wasm memory
 	err3 := json.Unmarshal(inputBytes, &contractInputMap)
 	if err3 != nil {
 		fmt.Println("Error unmarshaling response in callback function:", err3)
+		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Error unmarshaling response in callback function: %v", err3))
 	}
+	// var bidderData BidderData
+	// err := json.Unmarshal(contractInputMap["place_bid"], &bidderData)
+	// if err != nil {
+	// 	fmt.Println("Error unmarshaling bidderData in callback function:", err)
+	// 	return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Error unmarshaling bidderData in callback function: %v", err))
+	// }
 
-	var bidderData BidderData
-	err := json.Unmarshal(contractInputMap["place_bid"], &bidderData)
+	encryptedBid := contractInputMap.Data
+	
+	fmt.Println("Length of message: ", contractInputMap)
+	
+	decryptedBid, err := EciesDecryption("/home/rubix/Sai-Rubix/rubix-wasm/contracts/bidding_contract/bafybmihkhzcczetx43gzuraoemydxntloct6qb4jkix6xo26fv5jdefq3a/pvtKey.pem", encryptedBid)
 	if err != nil {
-		fmt.Println("Error unmarshaling bidderData in callback function:", err)
+		fmt.Println("err")
+		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("unable to get decrypted string: %v", err))
 	}
 
-	encryptedBid := bidderData.Bid
-
-	decryptedBid := eciesDecryption("/home/rubix/Sai-Rubix/rubix-wasm/contracts/bidding_contract/bafybmihkhzcczetx43gzuraoemydxntloct6qb4jkix6xo26fv5jdefq3a/pvtKey.pem", encryptedBid)
+	if len(decryptedBid) == 0 {
+		fmt.Println("Unable to get the decrypted Bid")
+		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap("Unable to get the decrypted Bid")
+	}
 
 	responseStr := decryptedBid
 
@@ -181,21 +193,22 @@ func ConvertSecp256k1privkeyToEcies(privKey *secp256k1.PrivateKey) (*ecies.Priva
 
 	return eciesPrivKey, nil
 }
-func eciesDecryption(privkey_path string, encrypted_data []byte) (plaintext string) {
-	read_encodedprivkey, err := os.ReadFile(privkey_path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("privatekey which is read from given privkey.pem file is ", read_encodedprivkey)
-	pemdecoded_privkey, rest := pem.Decode(read_encodedprivkey)
-	fmt.Println("pemdecoded privkey is ", pemdecoded_privkey)
-	fmt.Println("rest part while pem decoding privkey is ", rest)
-	password := "mypassword"
-	unsealedprivkey, err := seal.UnSeal(password, (pemdecoded_privkey).Bytes)
-	fmt.Println("Decrypted Private key is ", unsealedprivkey)
-	parsedprivkey := secp256k1.PrivKeyFromBytes(unsealedprivkey)
-	ecies_privkey, err := ConvertSecp256k1privkeyToEcies(parsedprivkey)
-	plaintext_bytes, err := ecies.Decrypt(ecies_privkey, encrypted_data)
-	plaintext_string := string(plaintext_bytes)
-	return plaintext_string
-}
+
+// func eciesDecryption(privkey_path string, encrypted_data []byte) (plaintext string) {
+// 	read_encodedprivkey, err := os.ReadFile(privkey_path)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	fmt.Println("privatekey which is read from given privkey.pem file is ", read_encodedprivkey)
+// 	pemdecoded_privkey, rest := pem.Decode(read_encodedprivkey)
+// 	fmt.Println("pemdecoded privkey is ", pemdecoded_privkey)
+// 	fmt.Println("rest part while pem decoding privkey is ", rest)
+// 	password := "mypassword"
+// 	unsealedprivkey, err := seal.UnSeal(password, (pemdecoded_privkey).Bytes)
+// 	fmt.Println("Decrypted Private key is ", unsealedprivkey)
+// 	parsedprivkey := secp256k1.PrivKeyFromBytes(unsealedprivkey)
+// 	ecies_privkey, err := ConvertSecp256k1privkeyToEcies(parsedprivkey)
+// 	plaintext_bytes, err := ecies.Decrypt(ecies_privkey, encrypted_data)
+// 	plaintext_string := string(plaintext_bytes)
+// 	return plaintext_string
+// }
