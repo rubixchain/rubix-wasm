@@ -30,8 +30,7 @@ pub fn place_bid(place_bid_req: PlaceBidReq) -> Result<String, WasmError> {
     let decrypted_bid = call_ecies_decryption(decryption_data)
     .map_err(|_| WasmError::from("Decryption failed"))?;
 
-    let fixed_decrypted_bid = decrypted_bid.replace("'", "\"");
-    let bid_map: HashMap<String, f64> = serde_json::from_str(&fixed_decrypted_bid)
+    let bid_map: HashMap<String, f64> = serde_json::from_str(&decrypted_bid)
         .map_err(|_| WasmError::from("Failed to deserialize decrypted bid into HashMap"))?;
 
    

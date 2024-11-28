@@ -33,8 +33,8 @@ func main() {
 		return
 	}
 
-	inputBidAmount := 13.34
-	inputBid := fmt.Sprintf("{'bid_amount': %v}", inputBidAmount)
+	inputBidAmount := 119.34
+	inputBid := fmt.Sprintf(`{"bid_amount": %v}`, inputBidAmount)
 	inputBidBytes := []byte(inputBid)
 
 	pubkeyPath := "/home/rubix/Sai-Rubix/rubix-wasm/contracts/bidding_contract/bafybmihkhzcczetx43gzuraoemydxntloct6qb4jkix6xo26fv5jdefq3a/pubKey.pem"
