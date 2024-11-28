@@ -1,4 +1,4 @@
-use imports::{call_get_bid_from_state, call_save_bid_to_state, ecies_decryption,};
+use imports::{call_get_bid_from_state, call_save_bid_to_state};
 use rubixwasm_std::errors::WasmError;
 use serde::{Deserialize, Serialize};
 use rubixwasm_std::contract_fn;
@@ -14,20 +14,19 @@ pub struct PlaceBidReq {
     pub encrypted_bid_amount: String,
 }
 
-
-
-
 #[contract_fn]
 pub fn place_bid(place_bid_req: PlaceBidReq) -> Result<String, WasmError> {
-    // Compare input bid
+
     let input_encrypted_bid = place_bid_req.encrypted_bid_amount;
     let private_key_path = "/home/rubix/Sai-Rubix/rubix-wasm/contracts/bidding_contract/bafybmihkhzcczetx43gzuraoemydxntloct6qb4jkix6xo26fv5jdefq3a/pvtKey.pem";
     
+    //decyption_data is the data which is required to pass as an input arguement to the decryption function
     let decryption_data = DecryptionInputData {
         Privatekey_path: private_key_path.to_string(),
-        data: decode(input_encrypted_bid).unwrap(),
+        data: decode(input_encrypted_bid).map_err(|_| WasmError::from("Decoding failed"))?,
     };
-    // let decrypted_bid = call_ecies_decryption(decryption_data)?; // Use `?` to propagate errors if any
+
+    // Use `?` to propagate errors if any
     let decrypted_bid = call_ecies_decryption(decryption_data)
     .map_err(|_| WasmError::from("Decryption failed"))?;
 
