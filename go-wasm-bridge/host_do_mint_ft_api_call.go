@@ -141,13 +141,7 @@ func (h *DoMintFTApiCall) callback(
 	}
 	fmt.Println("The api response from create ft api :", callCreateFTAPIResp)
 
-	wasmInput := WasmInput{
-		Caller:        caller,
-		AllocFunction: h.allocFunc,
-		Memory:        memory,
-		OutputValue:   callCreateFTAPIResp,
-	}
-	err = UpdateDataToWASM(&wasmInput, outputArgs)
+	err = UpdateDataToWASM(caller, h.allocFunc, callCreateFTAPIResp, outputArgs)
 	if err != nil {
 		fmt.Println("Failed to update data to WASM", err)
 		return utils.HandleError(err.Error())

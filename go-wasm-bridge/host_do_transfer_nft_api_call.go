@@ -137,13 +137,7 @@ func (h *DoTransferNFTApiCall) callback(
 	}
 
 	responseStr := "success"
-	wasmInput := WasmInput{
-		Caller:        caller,
-		AllocFunction: h.allocFunc,
-		Memory:        memory,
-		OutputValue:   responseStr,
-	}
-	err = UpdateDataToWASM(&wasmInput, outputArgs)
+	err = UpdateDataToWASM(caller, h.allocFunc, responseStr, outputArgs)
 	if err != nil {
 		fmt.Println("Failed to update data to WASM", err)
 		return utils.HandleError(err.Error())

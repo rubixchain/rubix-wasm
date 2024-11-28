@@ -268,13 +268,7 @@ func (h *DoMintNFTApiCall) callback(
 		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Deploy NFT API failed: %v\n", errDeploy))
 	}
 	responseStr := string(callCreateNFTAPIResp)
-	wasmInput := WasmInput{
-		Caller:        caller,
-		AllocFunction: h.allocFunc,
-		Memory:        memory,
-		OutputValue:   responseStr,
-	}
-	err = UpdateDataToWASM(&wasmInput, outputArgs)
+	err = UpdateDataToWASM(caller, h.allocFunc, responseStr, outputArgs)
 	if err != nil {
 		fmt.Println("Failed to update data to WASM", err)
 		return utils.HandleError(err.Error())
