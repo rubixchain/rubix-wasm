@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-
+    "math/big"
 	ecies "github.com/ecies/go/v2"
 	seal "github.com/rubixchain/rubixgoplatform/crypto"
 
@@ -28,28 +28,28 @@ func ConvertpubkeySecp256k1ToEcies(pubKey *secp256k1.PublicKey) (*ecies.PublicKe
 }
 
 // ConvertSecp256k1ToEcies converts a secp256k1 private key to an ECIES private key.
-// func ConvertSecp256k1privkeyToEcies(privKey *secp256k1.PrivateKey) (*ecies.PrivateKey, error) {
-// 	// Serialize the private key to get the private scalar bytes
-// 	privKeyBytes := privKey.Serialize()
+func ConvertSecp256k1privkeyToEcies(privKey *secp256k1.PrivateKey) (*ecies.PrivateKey, error) {
+	// Serialize the private key to get the private scalar bytes
+	privKeyBytes := privKey.Serialize()
 
-// 	// Convert the private scalar bytes to a big.Int
-// 	d := new(big.Int).SetBytes(privKeyBytes)
-// 	// Create an ECIES public key from the secp256k1 public key
-// 	pubKey := privKey.PubKey()
-// 	eciesPubKey := &ecies.PublicKey{
-// 		X:     pubKey.X(),
-// 		Y:     pubKey.Y(),
-// 		Curve: secp256k1.S256(),
-// 	}
+	// Convert the private scalar bytes to a big.Int
+	d := new(big.Int).SetBytes(privKeyBytes)
+	// Create an ECIES public key from the secp256k1 public key
+	pubKey := privKey.PubKey()
+	eciesPubKey := &ecies.PublicKey{
+		X:     pubKey.X(),
+		Y:     pubKey.Y(),
+		Curve: secp256k1.S256(),
+	}
 
-// 	// Create an ECIES private key from the D value and the ECIES public key
-// 	eciesPrivKey := &ecies.PrivateKey{
-// 		PublicKey: eciesPubKey,
-// 		D:         d,
-// 	}
+	// Create an ECIES private key from the D value and the ECIES public key
+	eciesPrivKey := &ecies.PrivateKey{
+		PublicKey: eciesPubKey,
+		D:         d,
+	}
 
-// 	return eciesPrivKey, nil
-// }
+	return eciesPrivKey, nil
+}
 
 func EciesEncryption(pubkey_path string, data []byte) (ciphertext []byte) {
 	read_pubKey, err := os.ReadFile(pubkey_path)
@@ -58,9 +58,9 @@ func EciesEncryption(pubkey_path string, data []byte) (ciphertext []byte) {
 	}
 	// fmt.Println("publickey which is read from given pubkey.pem file is ", read_pubKey)
 
-	pemdecoded_pubkey, rest := pem.Decode(read_pubKey)
+	pemdecoded_pubkey, _ := pem.Decode(read_pubKey)
 	// fmt.Println("pemdecodedpublic key is  ", pemdecoded_pubkey)
-	fmt.Println("rest part is ", rest)
+	// fmt.Println("rest part is ", rest)
 	pubkeyback, _ := secp256k1.ParsePubKey(pemdecoded_pubkey.Bytes)
 	// fmt.Println("parsed publickey is ", pubkeyback)
 	eciesPubKey, err := ConvertpubkeySecp256k1ToEcies(pubkeyback)
@@ -82,11 +82,14 @@ func EciesDecryption(privkey_path string, encrypted_data []byte) (plaintext stri
 		return "", err
 	}
 	fmt.Println("privatekey which is read from given privkey.pem file is ", read_encodedprivkey)
-	pemdecoded_privkey, rest := pem.Decode(read_encodedprivkey)
-	fmt.Println("pemdecoded privkey is ", pemdecoded_privkey)
-	fmt.Println("rest part while pem decoding privkey is ", rest)
+	pemdecoded_privkey, _ := pem.Decode(read_encodedprivkey)
+	// fmt.Println("pemdecoded privkey is ", pemdecoded_privkey)
+	// fmt.Println("rest part while pem decoding privkey is ", rest)
 	password := "mypassword"
 	unsealedprivkey, err := seal.UnSeal(password, (pemdecoded_privkey).Bytes)
+	if err != nil {
+		return "", fmt.Errorf("Unable to decrypt the private key: %v", err)
+	}
 	fmt.Println("Decrypted Private key is ", unsealedprivkey)
 	parsedprivkey := secp256k1.PrivKeyFromBytes(unsealedprivkey)
 	
