@@ -23,7 +23,7 @@ func mintFTFunc(wasmModule *wasmbridge.WasmModule) {
 	contractInput := `{"mint_sample_ft":{"name": "rubix1", "ft_info": {
   "did": "bafybmihxaehnreq4ygnq3re3soob5znuj7hxoku6aeitdukif75umdv2nu",
   "ft_count": 100,
-  "ft_name": "test",
+  "ft_name": "test4",
   "token_count": 1
 }}}`
 
@@ -64,6 +64,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize WASM module: %v", err)
 	}
-	//mintFTFunc(wasmModule)
-	transferFTFunc(wasmModule)
+	mintFTFunc(wasmModule)
+	//transferFTFunc(wasmModule)
 }
