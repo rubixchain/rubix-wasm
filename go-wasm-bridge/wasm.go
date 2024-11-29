@@ -27,16 +27,6 @@ type WasmModule struct {
 	quorumType  int
 }
 
-// WasmInput struct is defined beacuse, or else we need to provide 5 input params
-// Deined for better readability
-// type WasmInput struct {
-// 	Caller        *wasmtime.Caller
-// 	AllocFunction *wasmtime.Func
-// 	Memory        *wasmtime.Memory
-// 	OutputValue   string
-// }
-
-// caller *wasmtime.Caller, allocFunction *wasmtime.Func, memory *wasmtime.Memory, outputValue string, outputArg *utils.WasmArgInfo
 // WasmModuleOption allows us to configure WasmModule
 type WasmModuleOption func(*WasmModule)
 

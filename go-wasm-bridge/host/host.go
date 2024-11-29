@@ -1,15 +1,15 @@
-package wasmbridge
+package host
 
 import "github.com/bytecodealliance/wasmtime-go"
 
 type HostFunctionCallBack = func(*wasmtime.Caller, []wasmtime.Val) ([]wasmtime.Val, *wasmtime.Trap)
- 
+
 type HostFunction interface {
 	// Name of the method as describe in WASM
 	Name() string
 
 	// FuncType represents the function signature
-	FuncType()  *wasmtime.FuncType
+	FuncType() *wasmtime.FuncType
 
 	// Callback refers to the implementation of function logic on the host
 	Callback() HostFunctionCallBack

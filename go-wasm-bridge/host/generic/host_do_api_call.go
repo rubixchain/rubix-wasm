@@ -1,4 +1,4 @@
-package wasmbridge
+package generic
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/bytecodealliance/wasmtime-go"
+	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/host"
 	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/utils"
 )
 
@@ -39,7 +40,7 @@ func (h *DoApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wa
 	h.memory = memory
 }
 
-func (h *DoApiCall) Callback() HostFunctionCallBack {
+func (h *DoApiCall) Callback() host.HostFunctionCallBack {
 	return h.callback
 }
 
@@ -51,7 +52,7 @@ func (h *DoApiCall) callback(
 	inputArgs, outputArgs := utils.HostFunctionParamExtraction(args, true, true)
 
 	// Extract URL bytes and convert to string
-	urlBytes, memory, err := ExtractDataFromWASM(caller, inputArgs)
+	urlBytes, memory, err := utils.ExtractDataFromWASM(caller, inputArgs)
 	if err != nil {
 		fmt.Println("Failed to extract data from WASM", err)
 		return utils.HandleError(err.Error())
@@ -63,7 +64,7 @@ func (h *DoApiCall) callback(
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Printf("HTTP request failed: %v\n", err)
-		return []wasmtime.Val{wasmtime.ValI32(1)}, nil
+		return utils.HandleError(err.Error())
 	}
 	defer resp.Body.Close()
 
@@ -71,11 +72,11 @@ func (h *DoApiCall) callback(
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Printf("Failed to read response body: %v\n", err)
-		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Failed to read response body: %v\n", err))
+		return utils.HandleError(err.Error())
 	}
 
 	responseStr := string(body)
-	err = UpdateDataToWASM(caller, h.allocFunc, responseStr, outputArgs)
+	err = utils.UpdateDataToWASM(caller, h.allocFunc, responseStr, outputArgs)
 	if err != nil {
 		fmt.Println("Failed to update data to WASM", err)
 		return utils.HandleError(err.Error())
