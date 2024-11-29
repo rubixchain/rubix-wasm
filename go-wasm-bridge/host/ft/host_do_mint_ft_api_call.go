@@ -1,4 +1,4 @@
-package wasmbridge
+package ft
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"net/url"
 
 	"github.com/bytecodealliance/wasmtime-go"
+	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/host"
 	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/utils"
 )
 
@@ -54,7 +55,7 @@ func (h *DoMintFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memo
 	h.quorumType = quorumType
 }
 
-func (h *DoMintFTApiCall) Callback() HostFunctionCallBack {
+func (h *DoMintFTApiCall) Callback() host.HostFunctionCallBack {
 	return h.callback
 }
 
@@ -109,7 +110,7 @@ func callCreateFTAPI(nodeAddress string, mintFTdata MintFTData) (string, error) 
 	result := response["result"].(map[string]interface{})
 	id := result["id"].(string)
 
-	return SignatureResponse(id, nodeAddress)
+	return utils.SignatureResponse(id, nodeAddress)
 }
 
 func (h *DoMintFTApiCall) callback(
@@ -120,7 +121,7 @@ func (h *DoMintFTApiCall) callback(
 	inputArgs, outputArgs := utils.HostFunctionParamExtraction(args, true, true)
 
 	// Extract input bytes and convert to string
-	inputBytes, memory, err := ExtractDataFromWASM(caller, inputArgs)
+	inputBytes, memory, err := utils.ExtractDataFromWASM(caller, inputArgs)
 	if err != nil {
 		fmt.Println("Failed to extract data from WASM", err)
 		return utils.HandleError(err.Error())
@@ -132,50 +133,21 @@ func (h *DoMintFTApiCall) callback(
 	err3 := json.Unmarshal(inputBytes, &mintFTData)
 	if err3 != nil {
 		fmt.Println("Error unmarshaling mintftdata in callback function:", err3)
+		return utils.HandleError(err3.Error())
 	}
 
 	callCreateFTAPIResp, err := callCreateFTAPI(h.nodeAddress, mintFTData)
 	if err != nil {
 		fmt.Println("Error calling CreateFTAPI in callback function:", err)
-		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap("failed to mint ft")
+		return utils.HandleError(err.Error())
 	}
 	fmt.Println("The api response from create ft api :", callCreateFTAPIResp)
 
-	err = UpdateDataToWASM(caller, h.allocFunc, callCreateFTAPIResp, outputArgs)
+	err = utils.UpdateDataToWASM(caller, h.allocFunc, callCreateFTAPIResp, outputArgs)
 	if err != nil {
 		fmt.Println("Failed to update data to WASM", err)
 		return utils.HandleError(err.Error())
 	}
-	// responseStr := "success"
-	// respLen := int32(len(responseStr))
-	// result, err := h.allocFunc.Call(caller, respLen)
-	// if err != nil {
-	// 	fmt.Printf("Alloc call failed: %v\n", err)
-	// 	return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Alloc call failed: %v\n", err))
-	// }
-	// respPtr, ok := result.(int32)
-	// if !ok {
-	// 	errMsg := "Alloc function did not return i32"
-	// 	fmt.Println(errMsg)
-	// 	return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(errMsg)
-	// }
-
-	// // Get memory size to ensure we don't write out of bounds
-	// memSize := memory.DataSize(caller)
-	// if uint32(respPtr)+uint32(respLen) > uint32(memSize) {
-	// 	errMsg := "Response exceeds memory bounds"
-	// 	fmt.Println(errMsg)
-	// 	return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(errMsg)
-	// }
-
-	// // Write response bytes to allocated memory
-	// copy(data[respPtr:], []byte(responseStr))
-
-	// // Write the response pointer back to WASM memory using Little Endian encoding
-	// binary.LittleEndian.PutUint32(data[respPtrPtr:], uint32(respPtr))
-
-	// // Write the response length back to WASM memory using Little Endian encoding
-	// binary.LittleEndian.PutUint32(data[respLenPtr:], uint32(respLen))
 
 	return utils.HandleOk() // Success
 }

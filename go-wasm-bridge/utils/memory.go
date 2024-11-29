@@ -1,4 +1,4 @@
-package wasmbridge
+package utils
 
 import (
 	"encoding/binary"
@@ -6,10 +6,45 @@ import (
 	"fmt"
 
 	"github.com/bytecodealliance/wasmtime-go"
-	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/utils"
 )
 
-func ExtractDataFromWASM(caller *wasmtime.Caller, inputArg *utils.WasmArgInfo) ([]byte, *wasmtime.Memory, error) {
+type WasmArgInfo struct {
+	DataPtr     int32
+	DataPtrSize int32
+}
+
+func HostFunctionParamExtraction(args []wasmtime.Val, areInputArgsPresent bool, areOutputArgsPresent bool) (*WasmArgInfo, *WasmArgInfo) {
+	var nArgs int = len(args)
+
+	if ((nArgs % 2) != 0) || (nArgs == 0) || (nArgs > 4) {
+		fmt.Printf("Invalied number of Arguments")
+		return nil, nil
+	}
+
+	inputArg := &WasmArgInfo{}
+	outputArg := &WasmArgInfo{}
+
+	if areInputArgsPresent && areOutputArgsPresent {
+		inputArg.DataPtr = args[0].I32()
+		inputArg.DataPtrSize = args[1].I32()
+
+		outputArg.DataPtr = args[2].I32()
+		outputArg.DataPtrSize = args[3].I32()
+	} else {
+		if areInputArgsPresent {
+			inputArg.DataPtr = args[0].I32()
+			inputArg.DataPtrSize = args[1].I32()
+		}
+		if areOutputArgsPresent {
+			outputArg.DataPtr = args[2].I32()
+			outputArg.DataPtrSize = args[3].I32()
+		}
+	}
+
+	return inputArg, outputArg
+}
+
+func ExtractDataFromWASM(caller *wasmtime.Caller, inputArg *WasmArgInfo) ([]byte, *wasmtime.Memory, error) {
 	// Access memory from the caller
 	memory := caller.GetExport("memory").Memory()
 	if memory == nil {
@@ -40,7 +75,7 @@ func ExtractDataFromWASM(caller *wasmtime.Caller, inputArg *utils.WasmArgInfo) (
 	return inputBytes, memory, nil
 }
 
-func UpdateDataToWASM(caller *wasmtime.Caller, allocFunction *wasmtime.Func, outputValue string, outputArg *utils.WasmArgInfo) error {
+func UpdateDataToWASM(caller *wasmtime.Caller, allocFunction *wasmtime.Func, outputValue string, outputArg *WasmArgInfo) error {
 	outputValueLen := int32(len(outputValue))
 
 	// Allocating memory for output

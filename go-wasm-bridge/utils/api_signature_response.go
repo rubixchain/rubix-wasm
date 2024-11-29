@@ -1,4 +1,4 @@
-package wasmbridge
+package utils
 
 import (
 	"bytes"

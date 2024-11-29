@@ -1,4 +1,4 @@
-package wasmbridge
+package nft
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"github.com/bytecodealliance/wasmtime-go"
+	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/host"
 	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/utils"
 )
 
@@ -54,7 +55,7 @@ func (h *DoTransferNFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func,
 	h.quorumType = quorumType
 }
 
-func (h *DoTransferNFTApiCall) Callback() HostFunctionCallBack {
+func (h *DoTransferNFTApiCall) Callback() host.HostFunctionCallBack {
 	return h.callback
 }
 func callTransferNFTAPI(nodeAddress string, quorumType int, transferNFTdata TransferNFTData) error {
@@ -105,7 +106,7 @@ func callTransferNFTAPI(nodeAddress string, quorumType int, transferNFTdata Tran
 
 	defer resp.Body.Close()
 
-	_, err = SignatureResponse(id, nodeAddress)
+	_, err = utils.SignatureResponse(id, nodeAddress)
 	return err
 }
 
@@ -116,7 +117,7 @@ func (h *DoTransferNFTApiCall) callback(
 	inputArgs, outputArgs := utils.HostFunctionParamExtraction(args, true, true)
 
 	// Extract input bytes and convert to string
-	inputBytes, memory, err := ExtractDataFromWASM(caller, inputArgs)
+	inputBytes, memory, err := utils.ExtractDataFromWASM(caller, inputArgs)
 	if err != nil {
 		fmt.Println("Failed to extract data from WASM", err)
 		return utils.HandleError(err.Error())
@@ -128,16 +129,18 @@ func (h *DoTransferNFTApiCall) callback(
 	err3 := json.Unmarshal(inputBytes, &transferNFTData)
 	if err3 != nil {
 		fmt.Println("Error unmarshaling response in callback function:", err3)
-		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Error unmarshaling response in callback function:", err3))
+		errMsg := "Error unmashalling response in callback function" + err3.Error()
+		return utils.HandleError(errMsg)
 	}
 	callTransferNFTAPIRespErr := callTransferNFTAPI(h.nodeAddress, h.quorumType, transferNFTData)
 	if callTransferNFTAPIRespErr != nil {
 		fmt.Println("failed to transfer NFT", callTransferNFTAPIRespErr)
-		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap("failed to transfer NFT")
+		errMsg := "failed to transfer NFT" + callTransferNFTAPIRespErr.Error()
+		return utils.HandleError(errMsg)
 	}
 
 	responseStr := "success"
-	err = UpdateDataToWASM(caller, h.allocFunc, responseStr, outputArgs)
+	err = utils.UpdateDataToWASM(caller, h.allocFunc, responseStr, outputArgs)
 	if err != nil {
 		fmt.Println("Failed to update data to WASM", err)
 		return utils.HandleError(err.Error())

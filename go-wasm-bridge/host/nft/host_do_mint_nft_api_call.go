@@ -1,4 +1,4 @@
-package wasmbridge
+package nft
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	"os"
 
 	"github.com/bytecodealliance/wasmtime-go"
+	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/host"
 	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/utils"
 )
 
@@ -62,7 +63,7 @@ func (h *DoMintNFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, mem
 	h.quorumType = quorumType
 }
 
-func (h *DoMintNFTApiCall) Callback() HostFunctionCallBack {
+func (h *DoMintNFTApiCall) Callback() host.HostFunctionCallBack {
 	return h.callback
 }
 
@@ -227,7 +228,7 @@ func callDeployNFTAPI(nodeAddress string, quorumType int, mintNFTData MintNFTDat
 
 	defer resp.Body.Close()
 
-	_, err = SignatureResponse(id, nodeAddress)
+	_, err = utils.SignatureResponse(id, nodeAddress)
 	return err
 }
 
@@ -239,7 +240,7 @@ func (h *DoMintNFTApiCall) callback(
 	inputArgs, outputArgs := utils.HostFunctionParamExtraction(args, true, true)
 
 	// Extract input bytes
-	inputBytes, memory, err := ExtractDataFromWASM(caller, inputArgs)
+	inputBytes, memory, err := utils.ExtractDataFromWASM(caller, inputArgs)
 	if err != nil {
 		fmt.Println("Failed to extract data from WASM", err)
 		return utils.HandleError(err.Error())
@@ -251,6 +252,8 @@ func (h *DoMintNFTApiCall) callback(
 	err3 := json.Unmarshal(inputBytes, &mintNFTData)
 	if err3 != nil {
 		fmt.Println("Error unmarshaling response in callback function:", err3)
+		errMsg := "Error unmarshaling response in callback function:" + err3.Error()
+		return utils.HandleError(errMsg)
 	}
 
 	callCreateNFTAPIResp := callCreateNFTAPI(h.nodeAddress, mintNFTData)
@@ -258,17 +261,19 @@ func (h *DoMintNFTApiCall) callback(
 	err = json.Unmarshal(callCreateNFTAPIResp, &unmarshaledResponse)
 	if err != nil {
 		fmt.Println("Error in unmarshaling callCreateNFTAPIResp:", err)
-
+		errMsg := "Error in unmarshalling reponse from creat nft api" + err.Error()
+		return utils.HandleError(errMsg)
 	}
 	nftID := unmarshaledResponse["result"].(string)
 	fmt.Println("Create NFT API result:", nftID)
 
 	errDeploy := callDeployNFTAPI(h.nodeAddress, h.quorumType, mintNFTData, nftID)
 	if errDeploy != nil {
-		return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Deploy NFT API failed: %v\n", errDeploy))
+		errMsg := "Deploy NFT API failed" + errDeploy.Error()
+		return utils.HandleError(errMsg)
 	}
 	responseStr := string(callCreateNFTAPIResp)
-	err = UpdateDataToWASM(caller, h.allocFunc, responseStr, outputArgs)
+	err = utils.UpdateDataToWASM(caller, h.allocFunc, responseStr, outputArgs)
 	if err != nil {
 		fmt.Println("Failed to update data to WASM", err)
 		return utils.HandleError(err.Error())

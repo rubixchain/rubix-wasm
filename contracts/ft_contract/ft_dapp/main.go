@@ -23,7 +23,7 @@ func mintFTFunc(wasmModule *wasmbridge.WasmModule) {
 	contractInput := `{"mint_sample_ft":{"name": "rubix1", "ft_info": {
   "did": "bafybmihxaehnreq4ygnq3re3soob5znuj7hxoku6aeitdukif75umdv2nu",
   "ft_count": 100,
-  "ft_name": "test4",
+  "ft_name": "test5",
   "token_count": 1
 }}}`
 
