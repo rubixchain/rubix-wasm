@@ -9,7 +9,6 @@ import (
 	"net/url"
 
 	"github.com/bytecodealliance/wasmtime-go"
-	wasmbridge "github.com/rubixchain/rubix-wasm/go-wasm-bridge"
 	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/host"
 	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/utils"
 )
