@@ -4,11 +4,10 @@ import (
 	"encoding/pem"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
-    "math/big"
 	ecies "github.com/ecies/go/v2"
 	seal "github.com/rubixchain/rubixgoplatform/crypto"
-
 	secp256k1 "github.com/decred/dcrd/dcrec/secp256k1/v4"
 )
 
@@ -56,19 +55,16 @@ func EciesEncryption(pubkey_path string, data []byte) (ciphertext []byte) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// fmt.Println("publickey which is read from given pubkey.pem file is ", read_pubKey)
-
+	
 	pemdecoded_pubkey, _ := pem.Decode(read_pubKey)
-	// fmt.Println("pemdecodedpublic key is  ", pemdecoded_pubkey)
-	// fmt.Println("rest part is ", rest)
 	pubkeyback, _ := secp256k1.ParsePubKey(pemdecoded_pubkey.Bytes)
-	// fmt.Println("parsed publickey is ", pubkeyback)
+	
 	eciesPubKey, err := ConvertpubkeySecp256k1ToEcies(pubkeyback)
 	if err != nil {
 		fmt.Println("Error converting public key:", err)
 		return
 	}
-	// fmt.Println("ecies publickey is ", eciesPubKey)
+
 	ciphertext, err = ecies.Encrypt(eciesPubKey, data)
 	if err != nil {
 		panic(err)
@@ -81,18 +77,16 @@ func EciesDecryption(privkey_path string, encrypted_data []byte) (plaintext stri
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("privatekey which is read from given privkey.pem file is ", read_encodedprivkey)
+	
 	pemdecoded_privkey, _ := pem.Decode(read_encodedprivkey)
-	// fmt.Println("pemdecoded privkey is ", pemdecoded_privkey)
-	// fmt.Println("rest part while pem decoding privkey is ", rest)
 	password := "mypassword"
 	unsealedprivkey, err := seal.UnSeal(password, (pemdecoded_privkey).Bytes)
 	if err != nil {
-		return "", fmt.Errorf("Unable to decrypt the private key: %v", err)
+		return "", fmt.Errorf("unable to decrypt the private key: %v", err)
 	}
 	fmt.Println("Decrypted Private key is ", unsealedprivkey)
 	parsedprivkey := secp256k1.PrivKeyFromBytes(unsealedprivkey)
-	
+
 	ecies_privkey, err := ConvertSecp256k1privkeyToEcies(parsedprivkey)
 	if err != nil {
 		return "", fmt.Errorf("ConvertSecp256k1privkeyToEcies func failed: %v", err)
@@ -100,9 +94,11 @@ func EciesDecryption(privkey_path string, encrypted_data []byte) (plaintext stri
 
 	plaintext_bytes, err := ecies.Decrypt(ecies_privkey, encrypted_data)
 	if err != nil {
-		return "", fmt.Errorf("Decrypt func failed: %v", err)
+		return "", fmt.Errorf("decrypt func failed: %v", err)
 	}
 
 	plaintext_string := string(plaintext_bytes)
 	return plaintext_string, nil
 }
+
+

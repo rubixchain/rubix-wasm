@@ -9,58 +9,62 @@ import (
 
 const STATE_FILE_NAME = "bid_state.json"
 
+type PlaceBidReqState struct {
+	BidderDID          string `json:"bidder_did"`
+	EncryptedBidAmount string `json:"encrypted_bid_amount"`
+}
+
+type BiddingState struct {
+	BiddingInfo map[string]string `json:"bidding_info"`
+}
 
 func getStateFilePath() string {
 	absFilePath, _ := filepath.Abs(filepath.Join("state", STATE_FILE_NAME))
 	return absFilePath
 }
 
-
-type BidState struct {
-	Name       string  `json:"name"`
-	Project    string  `json:"project"`
-	CurrentBid float64 `json:"current_bid"`
+func GetBidInfo() (*BiddingState, error) {
+	return LoadBiddingState()
 }
 
-func LoadState() (*BidState, error) {
-	stateFile, err := os.ReadFile(getStateFilePath())
-	if err != nil {
-		return nil, fmt.Errorf("failed to load state file: %v, err: %v", getStateFilePath(), err)
-	}
-
-	var bidState *BidState
-	if err := json.Unmarshal(stateFile, &bidState); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal BidState struct, err: %v", err)
-	}
-
-	return bidState, nil
-}
-
-func SaveState(bidState *BidState) error {
-	marshalledBidState, err := json.Marshal(bidState)
+func saveBiddingState(placeBidReqState *BiddingState) error {
+	marshalledPlaceBidReqState, err := json.Marshal(placeBidReqState)
 	if err != nil {
 		return fmt.Errorf("failed to marshal BidState struct, err: %v", err)
 	}
 
-	return os.WriteFile(getStateFilePath(), marshalledBidState, 0755)
+	return os.WriteFile(getStateFilePath(), marshalledPlaceBidReqState, 0755)
+
 }
 
-func SaveIncomingBid(bidAmount float64) error {
-	bidState, err := LoadState()
+func LoadBiddingState() (*BiddingState, error) {
+	// Read the file containing the PlaceBidReqState
+	stateFile, err := os.ReadFile(getStateFilePath())
 	if err != nil {
-		return fmt.Errorf("saveIncomingBid: %v", err)
+		return nil, fmt.Errorf("failed to load bid info file: %v, err: %v", getStateFilePath(), err)
 	}
 
-	bidState.CurrentBid = bidAmount
+	// Unmarshal JSON data into the PlaceBidReqState struct
+	var biddingState *BiddingState
+	if err := json.Unmarshal(stateFile, &biddingState); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal biddingState struct, err: %v", err)
+	}
 
-	return SaveState(bidState)
+	return biddingState, nil
 }
 
-func GetCurrentBid() (float64, error) {
-	bidState, err := LoadState()
+func SavePlaceBidReqState(req PlaceBidReqState) error {
+	biddingState, err := LoadBiddingState()
 	if err != nil {
-		return 0, fmt.Errorf("getCurrentBid: %v", err)
+		return fmt.Errorf("error while loading bidding state, err: %v", err)
 	}
 
-	return bidState.CurrentBid, nil
+	if biddingState == nil {
+		return fmt.Errorf("bidding state is nil")
+	}
+
+	// Save the bidder DID and encrypted bid amount in the state
+	biddingState.BiddingInfo[req.BidderDID] = req.EncryptedBidAmount
+
+	return saveBiddingState(biddingState)
 }
