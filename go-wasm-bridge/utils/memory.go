@@ -36,8 +36,8 @@ func HostFunctionParamExtraction(args []wasmtime.Val, areInputArgsPresent bool, 
 			inputArg.DataPtrSize = args[1].I32()
 		}
 		if areOutputArgsPresent {
-			outputArg.DataPtr = args[2].I32()
-			outputArg.DataPtrSize = args[3].I32()
+			outputArg.DataPtr = args[0].I32()
+			outputArg.DataPtrSize = args[1].I32()
 		}
 	}
 
