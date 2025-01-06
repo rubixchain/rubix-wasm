@@ -3,10 +3,13 @@
 package wasmbridge
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 
 	"github.com/bytecodealliance/wasmtime-go"
@@ -258,4 +261,32 @@ func (w *WasmModule) CallFunction(args string) (string, error) {
 	}
 
 	return contractOutputStr, nil
+}
+
+func (w *WasmModule) GetSmartContractData(smartContractHash string, latest bool) ([]byte, error) {
+	reqData := map[string]interface{}{
+		"token":  smartContractHash,
+		"latest": latest,
+	}
+	bodyJSON, err := json.Marshal(reqData)
+	if err != nil {
+		return []byte{}, err
+	}
+	req, err := http.NewRequest("POST", w.nodeAddress, bytes.NewBuffer(bodyJSON))
+	if err != nil {
+		return []byte{}, err
+	}
+	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return []byte{}, err
+	}
+	smartContractData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return smartContractData, nil
+
 }
