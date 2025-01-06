@@ -3,10 +3,13 @@
 package wasmbridge
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 
 	"github.com/bytecodealliance/wasmtime-go"
@@ -25,6 +28,23 @@ type WasmModule struct {
 	// Rubix Blockchain elements
 	nodeAddress string
 	quorumType  int
+}
+
+type SmartContractDataReply struct {
+	BasicResponse
+	SCTDataReply []SCTDataReply
+}
+
+type BasicResponse struct {
+	Status  bool        `json:"status"`
+	Message string      `json:"message"`
+	Result  interface{} `json:"result"`
+}
+
+type SCTDataReply struct {
+	BlockNo           uint64
+	BlockId           string
+	SmartContractData string
 }
 
 // WasmModuleOption allows us to configure WasmModule
@@ -194,9 +214,14 @@ func (w *WasmModule) CallFunction(args string) (string, error) {
 	defer w.deallocate(outputLenPtr, 4)
 
 	// Retrieve the wrapper function
-	function := w.instance.GetExport(w.store, wrapperFuncName).Func()
-	if function == nil {
+	extern := w.instance.GetExport(w.store, wrapperFuncName)
+	if extern == nil {
 		return "", fmt.Errorf("function %s does not exist in the contract", funcName)
+	}
+
+	function := extern.Func()
+	if function == nil {
+		return "", fmt.Errorf("export %s is not a function", funcName)
 	}
 
 	// Call the wrapper function
@@ -253,4 +278,44 @@ func (w *WasmModule) CallFunction(args string) (string, error) {
 	}
 
 	return contractOutputStr, nil
+}
+
+func (w *WasmModule) GetSmartContractData(smartContractHash string, latest bool) (string, error) {
+	reqData := map[string]interface{}{
+		"token":  smartContractHash,
+		"latest": latest,
+	}
+	bodyJSON, err := json.Marshal(reqData)
+	if err != nil {
+		return "", err
+	}
+	url := w.nodeAddress + "/api/get-smart-contract-token-chain-data"
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyJSON))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	smartContractTokenData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	var dataReply SmartContractDataReply
+
+	if err := json.Unmarshal(smartContractTokenData, &dataReply); err != nil {
+		return "", err
+	}
+
+	smartContractData := dataReply.SCTDataReply
+	smartContractDataString, err := json.Marshal(smartContractData)
+	if err != nil {
+		return "", err
+	}
+
+	return string(smartContractDataString), nil
+
 }
