@@ -194,9 +194,14 @@ func (w *WasmModule) CallFunction(args string) (string, error) {
 	defer w.deallocate(outputLenPtr, 4)
 
 	// Retrieve the wrapper function
-	function := w.instance.GetExport(w.store, wrapperFuncName).Func()
-	if function == nil {
+	extern := w.instance.GetExport(w.store, wrapperFuncName)
+	if extern == nil {
 		return "", fmt.Errorf("function %s does not exist in the contract", funcName)
+	}
+
+	function := extern.Func()
+	if function == nil {
+		return "", fmt.Errorf("export %s is not a function", funcName)
 	}
 
 	// Call the wrapper function
