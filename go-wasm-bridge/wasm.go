@@ -30,6 +30,23 @@ type WasmModule struct {
 	quorumType  int
 }
 
+type SmartContractDataReply struct {
+	BasicResponse
+	SCTDataReply []SCTDataReply
+}
+
+type BasicResponse struct {
+	Status  bool        `json:"status"`
+	Message string      `json:"message"`
+	Result  interface{} `json:"result"`
+}
+
+type SCTDataReply struct {
+	BlockNo           uint64
+	BlockId           string
+	SmartContractData string
+}
+
 // WasmModuleOption allows us to configure WasmModule
 type WasmModuleOption func(*WasmModule)
 
@@ -263,30 +280,42 @@ func (w *WasmModule) CallFunction(args string) (string, error) {
 	return contractOutputStr, nil
 }
 
-func (w *WasmModule) GetSmartContractData(smartContractHash string, latest bool) ([]byte, error) {
+func (w *WasmModule) GetSmartContractData(smartContractHash string, latest bool) (string, error) {
 	reqData := map[string]interface{}{
 		"token":  smartContractHash,
 		"latest": latest,
 	}
 	bodyJSON, err := json.Marshal(reqData)
 	if err != nil {
-		return []byte{}, err
+		return "", err
 	}
-	req, err := http.NewRequest("POST", w.nodeAddress, bytes.NewBuffer(bodyJSON))
+	url := w.nodeAddress + "/api/get-smart-contract-token-chain-data"
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyJSON))
 	if err != nil {
-		return []byte{}, err
+		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return []byte{}, err
+		return "", err
 	}
-	smartContractData, err := io.ReadAll(resp.Body)
+	smartContractTokenData, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return []byte{}, err
+		return "", err
+	}
+	var dataReply SmartContractDataReply
+
+	if err := json.Unmarshal(smartContractTokenData, &dataReply); err != nil {
+		return "", err
 	}
 
-	return smartContractData, nil
+	smartContractData := dataReply.SCTDataReply
+	smartContractDataString, err := json.Marshal(smartContractData)
+	if err != nil {
+		return "", err
+	}
+
+	return string(smartContractDataString), nil
 
 }
