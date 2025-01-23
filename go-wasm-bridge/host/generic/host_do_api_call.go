@@ -11,8 +11,8 @@ import (
 )
 
 type DoApiCall struct {
-	allocFunc *wasmtime.Func
-	memory    *wasmtime.Memory
+	allocFunc           *wasmtime.Func
+	memory              *wasmtime.Memory
 }
 
 func NewDoApiCall() *DoApiCall {
@@ -35,7 +35,7 @@ func (h *DoApiCall) FuncType() *wasmtime.FuncType {
 	)
 }
 
-func (h *DoApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int) {
+func (h *DoApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int, safePassBearerToken string) {
 	h.allocFunc = allocFunc
 	h.memory = memory
 }

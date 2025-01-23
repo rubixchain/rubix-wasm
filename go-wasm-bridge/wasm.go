@@ -28,6 +28,9 @@ type WasmModule struct {
 	// Rubix Blockchain elements
 	nodeAddress string
 	quorumType  int
+
+	// SafePass (Rubix Wallet API) elements
+	safePassBearerToken string // SafePass Bearer Token for API calls
 }
 
 type SmartContractDataReply struct {
@@ -118,6 +121,7 @@ func NewWasmModule(wasmFilePath string, registry *HostFunctionRegistry, wasmModu
 			wasmModule.memory,
 			wasmModule.nodeAddress,
 			wasmModule.quorumType,
+			wasmModule.safePassBearerToken,
 		)
 	}
 
@@ -133,6 +137,12 @@ func WithRubixNodeAddress(nodeAddress string) WasmModuleOption {
 func WithQuorumType(quorumType int) WasmModuleOption {
 	return func(w *WasmModule) {
 		w.quorumType = quorumType
+	}
+}
+
+func WithSafePassBearerToken(safePassBearerToken string) WasmModuleOption {
+	return func(w *WasmModule) {
+		w.safePassBearerToken = safePassBearerToken
 	}
 }
 

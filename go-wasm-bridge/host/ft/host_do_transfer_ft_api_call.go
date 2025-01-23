@@ -28,6 +28,7 @@ type DoTransferFTApiCall struct {
 	memory      *wasmtime.Memory
 	nodeAddress string
 	quorumType  int
+	safePassBearerToken string
 }
 
 func NewDoTransferFTApiCall() *DoTransferFTApiCall {
@@ -48,33 +49,50 @@ func (h *DoTransferFTApiCall) FuncType() *wasmtime.FuncType {
 	)
 }
 
-func (h *DoTransferFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int) {
+func (h *DoTransferFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int, safePassBearerToken string) {
 	h.allocFunc = allocFunc
 	h.memory = memory
 	h.nodeAddress = nodeAddress
 	h.quorumType = quorumType
+	h.safePassBearerToken = safePassBearerToken
 }
 
 func (h *DoTransferFTApiCall) Callback() host.HostFunctionCallBack {
 	return h.callback
 }
-func callTransferFTAPI(nodeAddress string, quorumType int, transferFTdata TransferFTData) error {
+func callTransferFTAPI(nodeAddress string, quorumType int, transferFTdata TransferFTData, safePassBearerToken string) error {
 	transferFTdata.QuorumType = int32(quorumType)
-	bodyJSON, err := json.Marshal(transferFTdata)
+	requestBody, err := json.Marshal(transferFTdata)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
 		return err
 	}
 
-	transferFTUrl, err := url.JoinPath(nodeAddress, "/api/initiate-ft-transfer")
-	if err != nil {
-		return err
-	}
+	var req *http.Request
+	if safePassBearerToken == "" {
+		transferFTUrl, err := url.JoinPath(nodeAddress, "/api/initiate-ft-transfer")
+		if err != nil {
+			return err
+		}
+	
+		req, err = http.NewRequest("POST", transferFTUrl, bytes.NewBuffer(requestBody))
+		if err != nil {
+			fmt.Println("Error creating HTTP request:", err)
+			return err
+		}
+	} else {
+		requestURL, err := url.JoinPath(nodeAddress, "/transfer_ft")
+		if err != nil {
+			return err
+		}
 
-	req, err := http.NewRequest("POST", transferFTUrl, bytes.NewBuffer(bodyJSON))
-	if err != nil {
-		fmt.Println("Error creating HTTP request:", err)
-		return err
+		req, err = http.NewRequest("POST", requestURL, bytes.NewBuffer(requestBody))
+		if err != nil {
+			fmt.Println("Error creating HTTP request:", err)
+			return err
+		}
+
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", safePassBearerToken))
 	}
 
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
@@ -132,7 +150,7 @@ func (h *DoTransferFTApiCall) callback(
 		errMsg := "Error unmarshalling response in callback function" + err3.Error()
 		return utils.HandleError(errMsg)
 	}
-	callTransferFTAPIRespErr := callTransferFTAPI(h.nodeAddress, h.quorumType, transferFTData)
+	callTransferFTAPIRespErr := callTransferFTAPI(h.nodeAddress, h.quorumType, transferFTData, h.safePassBearerToken)
 
 	if callTransferFTAPIRespErr != nil {
 		fmt.Println("failed to transfer NFT", callTransferFTAPIRespErr)

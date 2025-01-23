@@ -22,6 +22,7 @@ type DoMintNFTApiCall struct {
 	memory      *wasmtime.Memory
 	nodeAddress string
 	quorumType  int
+	safePassBearerAuthToken string
 }
 
 type MintNFTData struct {
@@ -56,18 +57,19 @@ func (h *DoMintNFTApiCall) FuncType() *wasmtime.FuncType {
 	)
 }
 
-func (h *DoMintNFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int) {
+func (h *DoMintNFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int, safePassBearerAuthToken string) {
 	h.allocFunc = allocFunc
 	h.memory = memory
 	h.nodeAddress = nodeAddress
 	h.quorumType = quorumType
+	h.safePassBearerAuthToken = safePassBearerAuthToken
 }
 
 func (h *DoMintNFTApiCall) Callback() host.HostFunctionCallBack {
 	return h.callback
 }
 
-func callCreateNFTAPI(nodeAddress string, mintNFTdata MintNFTData) []byte {
+func callCreateNFTAPI(nodeAddress string, mintNFTdata MintNFTData, safePassBearerToken string) []byte {
 	var requestBody bytes.Buffer
 
 	// Create a new multipart writer
@@ -132,18 +134,35 @@ func callCreateNFTAPI(nodeAddress string, mintNFTdata MintNFTData) []byte {
 	}
 
 	// Create the request URL
-	url, err := url.JoinPath(nodeAddress, "/api/create-nft")
-	if err != nil {
-		fmt.Println("Error forming url path for Create NFT API, err: ", err)
-		return nil
-	}
+	var req *http.Request
+	if safePassBearerToken == "" {
+		url, err := url.JoinPath(nodeAddress, "/api/create-nft")
+		if err != nil {
+			fmt.Println("Error forming url path for Create NFT API, err: ", err)
+			return nil
+		}
+	
+		// Create a new HTTP request
+		req, err = http.NewRequest("POST", url, &requestBody)
+		if err != nil {
+			fmt.Println("Error creating HTTP request:", err)
+			// return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Failed to create HTTP request: %v\n", err))
+			return nil
+		}
+	} else {
+		requestURL, err := url.JoinPath(nodeAddress, "/create_nft")
+		if err != nil {
+			fmt.Println("Error forming url path for Create NFT API, err: ", err)
+			return nil
+		}
 
-	// Create a new HTTP request
-	req, err := http.NewRequest("POST", url, &requestBody)
-	if err != nil {
-		fmt.Println("Error creating HTTP request:", err)
-		// return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Failed to create HTTP request: %v\n", err))
-		return nil
+		req, err = http.NewRequest("POST", requestURL, &requestBody)
+		if err != nil {
+			fmt.Println("Error creating HTTP request:", err)
+			return nil
+		}
+
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", safePassBearerToken))
 	}
 
 	// Set the Content-Type header to multipart/form-data with the correct boundary
@@ -177,29 +196,50 @@ func callCreateNFTAPI(nodeAddress string, mintNFTdata MintNFTData) []byte {
 
 }
 
-func callDeployNFTAPI(nodeAddress string, quorumType int, mintNFTData MintNFTData, nftId string) error {
+func callDeployNFTAPI(nodeAddress string, quorumType int, mintNFTData MintNFTData, nftId string, safePassBearerToken string) error {
 	var deployReq deployNFTReq
 
 	deployReq.Did = mintNFTData.Did
 	deployReq.Nft = nftId
 	deployReq.QuorumType = int32(quorumType)
 
-	bodyJSON, err := json.Marshal(deployReq)
+	requestBody, err := json.Marshal(deployReq)
 	if err != nil {
 		fmt.Println("error in marshaling JSON:", err)
 		return err
 	}
 
-	deployNFTUrl, err := url.JoinPath(nodeAddress, "/api/deploy-nft")
-	if err != nil {
-		return err
+	var req *http.Request
+	if safePassBearerToken == "" {
+		url, err := url.JoinPath(nodeAddress, "/api/deploy-nft")
+		if err != nil {
+			fmt.Println("Error forming url path for Create NFT API, err: ", err)
+			return nil
+		}
+	
+		// Create a new HTTP request
+		req, err = http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+		if err != nil {
+			fmt.Println("Error creating HTTP request:", err)
+			// return []wasmtime.Val{wasmtime.ValI32(1)}, wasmtime.NewTrap(fmt.Sprintf("Failed to create HTTP request: %v\n", err))
+			return nil
+		}
+	} else {
+		requestURL, err := url.JoinPath(nodeAddress, "/deploy_nft")
+		if err != nil {
+			fmt.Println("Error forming url path for Create NFT API, err: ", err)
+			return nil
+		}
+
+		req, err = http.NewRequest("POST", requestURL, bytes.NewBuffer(requestBody))
+		if err != nil {
+			fmt.Println("Error creating HTTP request:", err)
+			return nil
+		}
+
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", safePassBearerToken))
 	}
 
-	req, err := http.NewRequest("POST", deployNFTUrl, bytes.NewBuffer(bodyJSON))
-	if err != nil {
-		fmt.Println("Error creating HTTP request:", err)
-		return err
-	}
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
 	client := &http.Client{}
@@ -256,7 +296,7 @@ func (h *DoMintNFTApiCall) callback(
 		return utils.HandleError(errMsg)
 	}
 
-	callCreateNFTAPIResp := callCreateNFTAPI(h.nodeAddress, mintNFTData)
+	callCreateNFTAPIResp := callCreateNFTAPI(h.nodeAddress, mintNFTData, h.safePassBearerAuthToken)
 	var unmarshaledResponse map[string]interface{}
 	err = json.Unmarshal(callCreateNFTAPIResp, &unmarshaledResponse)
 	if err != nil {
@@ -267,7 +307,7 @@ func (h *DoMintNFTApiCall) callback(
 	nftID := unmarshaledResponse["result"].(string)
 	fmt.Println("Create NFT API result:", nftID)
 
-	errDeploy := callDeployNFTAPI(h.nodeAddress, h.quorumType, mintNFTData, nftID)
+	errDeploy := callDeployNFTAPI(h.nodeAddress, h.quorumType, mintNFTData, nftID, h.safePassBearerAuthToken)
 	if errDeploy != nil {
 		errMsg := "Deploy NFT API failed" + errDeploy.Error()
 		return utils.HandleError(errMsg)

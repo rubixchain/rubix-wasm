@@ -19,6 +19,7 @@ type DoMintFTApiCall struct {
 	memory      *wasmtime.Memory
 	nodeAddress string
 	quorumType  int
+	safePassBearerAuthToken string
 }
 
 type MintFTData struct {
@@ -48,18 +49,21 @@ func (h *DoMintFTApiCall) FuncType() *wasmtime.FuncType {
 	)
 }
 
-func (h *DoMintFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int) {
+func (h *DoMintFTApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, 
+	memory *wasmtime.Memory, nodeAddress string, quorumType int, safePassBearerAuthToken string,
+) {
 	h.allocFunc = allocFunc
 	h.memory = memory
 	h.nodeAddress = nodeAddress
 	h.quorumType = quorumType
+	h.safePassBearerAuthToken = safePassBearerAuthToken 
 }
 
 func (h *DoMintFTApiCall) Callback() host.HostFunctionCallBack {
 	return h.callback
 }
 
-func callCreateFTAPI(nodeAddress string, mintFTdata MintFTData) (string, error) {
+func callCreateFTAPI(nodeAddress string, mintFTdata MintFTData, safePassBearerToken string) (string, error) {
 	fmt.Println("The body in create-ft api :", mintFTdata)
 	requestBody, err := json.Marshal(mintFTdata)
 	if err != nil {
@@ -68,17 +72,35 @@ func callCreateFTAPI(nodeAddress string, mintFTdata MintFTData) (string, error) 
 	}
 
 	// Create the request URL
-	requestURL, err := url.JoinPath(nodeAddress, "/api/create-ft")
-	if err != nil {
-		return "", err
+	var req *http.Request
+	if safePassBearerToken == "" {
+		requestURL, err := url.JoinPath(nodeAddress, "/api/create-ft")
+		if err != nil {
+			return "", err
+		}
+
+		req, err = http.NewRequest("POST", requestURL, bytes.NewBuffer(requestBody))
+		if err != nil {
+			fmt.Println("Error creating HTTP request:", err)
+			return "", err
+		}
+	} else {
+		requestURL, err := url.JoinPath(nodeAddress, "/create_ft")
+		if err != nil {
+			return "", err
+		}
+
+		req, err = http.NewRequest("POST", requestURL, bytes.NewBuffer(requestBody))
+		if err != nil {
+			fmt.Println("Error creating HTTP request:", err)
+			return "", err
+		}
+
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", safePassBearerToken))
 	}
 
-	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(requestBody))
-	if err != nil {
-		fmt.Println("Error creating HTTP request:", err)
-		return "", err
-	}
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+
 	// Send the request
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -98,8 +120,13 @@ func callCreateFTAPI(nodeAddress string, mintFTdata MintFTData) (string, error) 
 		fmt.Printf("Error reading response body: %s\n", err)
 		return "", err
 	}
-	// Process the data as needed
-	fmt.Println("Response Body in callTransferFTAPI :", string(createFtResponse))
+
+	fmt.Println("Response Body in callCreateFTAPI :", string(createFtResponse))
+	
+	if safePassBearerToken != "" {
+		return string(createFtResponse), nil
+	}
+
 	var response map[string]interface{}
 	err3 := json.Unmarshal(createFtResponse, &response)
 	if err3 != nil {
@@ -136,7 +163,7 @@ func (h *DoMintFTApiCall) callback(
 		return utils.HandleError(err3.Error())
 	}
 
-	callCreateFTAPIResp, err := callCreateFTAPI(h.nodeAddress, mintFTData)
+	callCreateFTAPIResp, err := callCreateFTAPI(h.nodeAddress, mintFTData, h.safePassBearerAuthToken)
 	if err != nil {
 		fmt.Println("Error calling CreateFTAPI in callback function:", err)
 		return utils.HandleError(err.Error())
