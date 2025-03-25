@@ -7,8 +7,16 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
+type BasicResponse struct {
+	Message string `json:"message"`
+	Result  string `json:"result"`
+	Status  bool   `json:"status"`
+}
+
+// SignatureResponse signs the transaction and returns the transaction hash
 func SignatureResponse(requestId string, nodeAddress string) (string, error) {
 	data := map[string]interface{}{
 		"id":       requestId,
@@ -44,10 +52,21 @@ func SignatureResponse(requestId string, nodeAddress string) (string, error) {
 		return "", fmt.Errorf("Error reading response body: %s\n", err)
 	}
 
-	// Process the data as needed
-	fmt.Println("Response Body in signature response :", string(data2))
-	//json encode string
-	defer resp.Body.Close()
+	var basicResponse *BasicResponse
+	if err := json.Unmarshal(data2, &basicResponse); err != nil {
+		return "", fmt.Errorf("unable to unmarshal reponse")
+	}
 
-	return string(data2), nil
+	return extractTransactionID(basicResponse.Message), nil
+}
+
+func extractTransactionID(txMsg string) string {
+	txMsgElems := strings.Split(txMsg, " ")
+
+	if len(txMsgElems) == 0 {
+		return ""
+	}
+
+	txID := txMsgElems[len(txMsgElems) - 1]
+	return txID
 }
