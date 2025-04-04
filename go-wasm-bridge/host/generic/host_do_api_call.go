@@ -8,6 +8,7 @@ import (
 	"github.com/bytecodealliance/wasmtime-go"
 	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/host"
 	"github.com/rubixchain/rubix-wasm/go-wasm-bridge/utils"
+	wasmContext "github.com/rubixchain/rubix-wasm/go-wasm-bridge/context"
 )
 
 type DoApiCall struct {
@@ -35,7 +36,7 @@ func (h *DoApiCall) FuncType() *wasmtime.FuncType {
 	)
 }
 
-func (h *DoApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int) {
+func (h *DoApiCall) Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int, wasmCtx *wasmContext.WasmContext) {
 	h.allocFunc = allocFunc
 	h.memory = memory
 }
