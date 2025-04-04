@@ -1,6 +1,9 @@
 package host
 
-import "github.com/bytecodealliance/wasmtime-go"
+import (
+	"github.com/bytecodealliance/wasmtime-go"
+	wasmContext "github.com/rubixchain/rubix-wasm/go-wasm-bridge/context"
+)
 
 type HostFunctionCallBack = func(*wasmtime.Caller, []wasmtime.Val) ([]wasmtime.Val, *wasmtime.Trap)
 
@@ -15,5 +18,9 @@ type HostFunction interface {
 	Callback() HostFunctionCallBack
 
 	// Initialize inits with necessary Wasmtime elements such as allocation, deallocation functions and memory
-	Initialize(allocFunc, deallocFunc *wasmtime.Func, memory *wasmtime.Memory, nodeAddress string, quorumType int)
+	Initialize(
+		allocFunc, deallocFunc *wasmtime.Func, 
+		memory *wasmtime.Memory, nodeAddress string, quorumType int,
+		wasmCtx *wasmContext.WasmContext,
+	)
 }

@@ -13,6 +13,7 @@ import (
 	"os"
 
 	"github.com/bytecodealliance/wasmtime-go"
+	wasmContext "github.com/rubixchain/rubix-wasm/go-wasm-bridge/context"
 )
 
 // WasmModule encapsulates the WASM module and its associated functions.
@@ -28,6 +29,9 @@ type WasmModule struct {
 	// Rubix Blockchain elements
 	nodeAddress string
 	quorumType  int
+
+	// Context
+	wasmCtx *wasmContext.WasmContext
 }
 
 type SmartContractDataReply struct {
@@ -118,7 +122,9 @@ func NewWasmModule(wasmFilePath string, registry *HostFunctionRegistry, wasmModu
 			wasmModule.memory,
 			wasmModule.nodeAddress,
 			wasmModule.quorumType,
+			wasmModule.wasmCtx,
 		)
+
 	}
 
 	return wasmModule, nil
