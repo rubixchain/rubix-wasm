@@ -142,12 +142,22 @@ func WithQuorumType(quorumType int) WasmModuleOption {
 	}
 }
 
+func WithWasmContext(wasmCtx *wasmContext.WasmContext) WasmModuleOption {
+	return func(w *WasmModule) {
+		w.wasmCtx = wasmCtx
+	}
+}
+
 func (w *WasmModule) GetNodeAddress() string {
 	return w.nodeAddress
 }
 
 func (w *WasmModule) GetQuorumType() int {
 	return w.quorumType
+}
+
+func (w *WasmModule) GetWasmContext() *wasmContext.WasmContext {
+	return w.wasmCtx
 }
 
 // allocate allocates memory in WASM and copies the data.
