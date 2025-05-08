@@ -10,3 +10,4 @@ pub use helpers::call_mint_nft_api;
 pub use helpers::call_transfer_nft_api;
 pub use helpers::call_mint_ft_api;
 pub use helpers::call_transfer_ft_api;
+pub use helpers::call_lock_rbt_api;
