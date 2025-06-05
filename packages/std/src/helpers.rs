@@ -41,6 +41,7 @@ pub struct MintFt {
     pub did:        String, 
     pub ft_count:    i32,
     pub ft_name:    String,
+    pub ft_num_start_index :i32,
     pub token_count: i32,
 }
 
