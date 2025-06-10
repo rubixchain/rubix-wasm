@@ -19,11 +19,28 @@ func executeAndGetContractResult(wasmModule *wasmbridge.WasmModule, contractInpu
 	return contractResult, nil
 }
 
-func mintFTFunc(wasmModule *wasmbridge.WasmModule) {
+func mintFTFunc1(wasmModule *wasmbridge.WasmModule) {
 	contractInput := `{"mint_sample_ft":{"name": "rubix1", "ft_info": {
-  "did": "bafybmihxaehnreq4ygnq3re3soob5znuj7hxoku6aeitdukif75umdv2nu",
-  "ft_count": 100,
-  "ft_name": "test5",
+  "did": "bafybmihho2yn53uxmso4yl6rv2dik35l4gmalt3gypl4ohpxuw7iy4a3ke",
+  "ft_count": 10,
+  "ft_name": "test17",
+  "ft_num_start_index": 0,
+  "token_count": 1
+}}}`
+
+	result, err := executeAndGetContractResult(wasmModule, contractInput)
+	if err != nil {
+		fmt.Printf("unable to execute `mint_sample_ft` Contract function, error: %v\n", err)
+		return
+	}
+	fmt.Println("mint_sample_ft Result: ", result)
+}
+func mintFTFunc2(wasmModule *wasmbridge.WasmModule) {
+	contractInput := `{"mint_sample_ft":{"name": "rubix1", "ft_info": {
+  "did": "bafybmier5otnwn7m7yodowfvzfbobwha3cagyrjphrtifa45jug3tafzxi",
+  "ft_count": 10,
+  "ft_name": "test17",
+  "ft_num_start_index": 10,
   "token_count": 1
 }}}`
 
@@ -64,6 +81,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize WASM module: %v", err)
 	}
-	mintFTFunc(wasmModule)
+	mintFTFunc1(wasmModule)
+	fmt.Println("***First 100 created, trying to create next 100***")
+	mintFTFunc2(wasmModule)
 	//transferFTFunc(wasmModule)
 }
