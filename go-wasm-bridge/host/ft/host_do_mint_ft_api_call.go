@@ -23,10 +23,11 @@ type DoMintFTApiCall struct {
 }
 
 type MintFTData struct {
-	Did        string `json:"did"`
-	FtCount    int32  `json:"ft_count"`
-	FtName     string `json:"ft_name"`
-	TokenCount int32  `json:"token_count"`
+	Did             string `json:"did"`
+	FtCount         int32  `json:"ft_count"`
+	FtName          string `json:"ft_name"`
+	FtNumStartIndex int32  `json:"ft_num_start_index"`
+	TokenCount      int32  `json:"token_count"`
 }
 
 func NewDoMintFTApiCall() *DoMintFTApiCall {
@@ -74,7 +75,18 @@ func callCreateFTAPI(nodeAddress string, mintFTdata MintFTData) (string, error) 
 		return "", err
 	}
 
-	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(requestBody))
+	// Add ftNumStartIndex as a query parameter
+	u, err := url.Parse(requestURL)
+	if err != nil {
+		fmt.Println("Error parsing URL:", err)
+		return "", err
+	}
+	query := u.Query()
+	query.Set("ftNumStartIndex", fmt.Sprintf("%d", mintFTdata.FtNumStartIndex))
+	u.RawQuery = query.Encode()
+	finalURL := u.String()
+
+	req, err := http.NewRequest("POST", finalURL, bytes.NewBuffer(requestBody))
 	if err != nil {
 		fmt.Println("Error creating HTTP request:", err)
 		return "", err

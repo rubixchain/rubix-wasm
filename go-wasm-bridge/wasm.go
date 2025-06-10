@@ -59,7 +59,7 @@ type WasmModuleOption func(*WasmModule)
 func NewWasmModule(wasmFilePath string, registry *HostFunctionRegistry, wasmModuleOpts ...WasmModuleOption) (*WasmModule, error) {
 	// Define Wasm Module with default params
 	wasmModule := &WasmModule{
-		nodeAddress: "http://localhost:20000",
+		nodeAddress: "http://localhost:20006",
 		quorumType:  2,
 	}
 
